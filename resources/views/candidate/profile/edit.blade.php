@@ -1,38 +1,40 @@
 @extends('layouts.admin')
 
-@section('title', 'Profil Saya')
+@section('title', 'Visi & Misi')
+@section('page-title', 'Visi & Misi')
 
 @push('styles')
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <style>
-  .ql-container { font-family:'Inter',sans-serif; font-size:14px; border-radius:0 0 .5rem .5rem; border-color:#e2e8f0; }
-  .ql-toolbar  { border-radius:.5rem .5rem 0 0; border-color:#e2e8f0; background:#f8fafc; }
-  .ql-editor   { min-height:220px; }
+  .ql-container { font-family:'Inter',sans-serif; font-size:14px; border-radius:0 0 .75rem .75rem; border-color:#e2e8f0; }
+  .ql-toolbar  { border-radius:.75rem .75rem 0 0; border-color:#e2e8f0; background:#f8fafc; }
+  .ql-editor   { min-height:200px; }
   .ql-editor.ql-blank::before { color:#94a3b8; font-style:normal; }
 </style>
 @endpush
 
 @section('content')
-<div class="p-6 max-w-3xl mx-auto space-y-6">
+@php $c = $candidate; @endphp
 
-  {{-- Header --}}
-  <div class="flex items-center gap-4">
-    <div class="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center text-xl font-bold shadow">
-      {{ $candidate->number }}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  {{-- Header kandidat --}}
+  <div class="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center text-xl font-extrabold shrink-0">
+      {{ str_pad($c->number, 2, '0', STR_PAD_LEFT) }}
     </div>
-    <div>
-      <h1 class="text-2xl font-bold text-slate-800">Profil Saya</h1>
-      <p class="text-slate-500 text-sm mt-0.5">
-        Kandidat No. {{ $candidate->number }} &bull;
-        <span class="font-semibold text-brand-600">{{ $candidate->name }}</span>
-      </p>
+    <div class="min-w-0">
+      <p class="font-bold text-slate-900 truncate">{{ $c->name }}</p>
+      @if($c->alumni)
+        <p class="text-xs text-slate-400 mt-0.5">{{ $c->alumni->faculty }} · {{ $c->alumni->department }}</p>
+      @endif
     </div>
   </div>
 
   {{-- Flash --}}
   @if(session('success'))
-  <div class="rounded-xl bg-green-50 border border-green-200 text-green-800 px-4 py-3 flex items-center gap-3">
-    <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+  <div class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl">
+    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
     {{ session('success') }}
@@ -40,181 +42,183 @@
   @endif
 
   @if($errors->any())
-  <div class="rounded-xl bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm space-y-1">
+  <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl space-y-1">
     @foreach($errors->all() as $e)<p>• {{ $e }}</p>@endforeach
   </div>
   @endif
 
-  <form action="{{ route('kandidat.profil.update') }}" method="POST" enctype="multipart/form-data"
-        onsubmit="syncQuill()" class="space-y-6">
+  {{-- ═══ FORM: VISI & MISI ═══ --}}
+  <form action="{{ route('kandidat.profil.update') }}" method="POST"
+        id="formVisiMisi" onsubmit="syncMisi()" class="space-y-6">
     @csrf @method('PUT')
-    <input type="hidden" name="profile" id="profileInput">
+    <input type="hidden" name="mission" id="missionInput">
 
-    {{-- ── CARD: Foto ─────────────────────────────────────────────────────────── --}}
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-100">
-        <h2 class="font-semibold text-slate-700">Foto</h2>
-        <p class="text-xs text-slate-400 mt-0.5">Foto resmi yang ditampilkan di surat suara</p>
-      </div>
-      <div class="px-6 py-5 flex items-center gap-6">
-        <div class="shrink-0">
-          <div class="w-28 h-28 rounded-full border-4 border-slate-200 bg-slate-100 overflow-hidden
-                      flex items-center justify-center cursor-pointer hover:border-brand-400 transition"
-               onclick="document.getElementById('fotoInput').click()">
-            <svg id="fotoIcon" class="w-10 h-10 text-slate-300 {{ $candidate->photo ? 'hidden' : '' }}"
-                 fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-            <img id="fotoPreview"
-                 class="w-full h-full object-cover {{ $candidate->photo ? '' : 'hidden' }}"
-                 src="{{ $candidate->photo ? $candidate->photo_url : '' }}" alt="">
-          </div>
-          <input type="file" id="fotoInput" name="photo" accept="image/*" class="hidden"
-                 onchange="previewFoto(this)">
-        </div>
-        <div class="space-y-2">
-          <button type="button" onclick="document.getElementById('fotoInput').click()"
-                  class="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700
-                         border border-brand-200 hover:border-brand-400 px-4 py-2 rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            {{ $candidate->photo ? 'Ganti Foto' : 'Pilih Foto' }}
-          </button>
-          <p class="text-xs text-slate-400">Format: JPG, PNG, WebP &bull; Maks. 2MB<br>Kosongkan jika tidak ingin mengganti foto</p>
-        </div>
-      </div>
-    </div>
-
-    {{-- ── CARD: Visi & Misi ──────────────────────────────────────────────────── --}}
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100">
-        <h2 class="font-semibold text-slate-700">Visi &amp; Misi</h2>
+        <h3 class="font-semibold text-slate-900">Visi &amp; Misi</h3>
         <p class="text-xs text-slate-400 mt-0.5">Ditampilkan kepada pemilih sebagai bahan pertimbangan</p>
       </div>
-      <div class="px-6 py-5 space-y-4">
+      <div class="p-6 space-y-6">
 
+        {{-- Visi --}}
         <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Visi</label>
-          <textarea name="vision" rows="3" placeholder="Tuliskan visi Anda secara singkat dan jelas..."
-                    class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800
-                           focus:outline-none focus:ring-2 focus:ring-brand-200 transition resize-none">{{ old('vision', $candidate->vision) }}</textarea>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Visi</label>
+          <textarea name="vision" rows="3"
+                    placeholder="Tuliskan visi Anda secara singkat dan jelas..."
+                    class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition resize-none">{{ old('vision', $c->vision) }}</textarea>
         </div>
 
+        {{-- Misi — Quill editor --}}
         <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Misi</label>
-          <textarea name="mission" rows="5" placeholder="Tuliskan misi-misi yang akan Anda jalankan..."
-                    class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800
-                           focus:outline-none focus:ring-2 focus:ring-brand-200 transition resize-none">{{ old('mission', $candidate->mission) }}</textarea>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Misi</label>
+          <div id="misiEditor"></div>
         </div>
 
       </div>
-    </div>
-
-    {{-- ── CARD: Profil & Perkenalan (Quill) ─────────────────────────────────── --}}
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100">
-        <h2 class="font-semibold text-slate-700">Profil &amp; Perkenalan</h2>
-        <p class="text-xs text-slate-400 mt-0.5">
-          Perkenalkan diri Anda kepada pemilih. Bisa memuat latar belakang, pengalaman, dan alasan mencalonkan diri.
-          Gunakan format teks: heading, tebal, miring, daftar, tautan.
-        </p>
+      <div class="px-6 pb-5 flex justify-end">
+        <button type="submit"
+                class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Simpan Visi &amp; Misi
+        </button>
       </div>
-      <div class="px-6 py-5">
-        <div id="quillEditor" class="bg-white"></div>
-      </div>
-    </div>
-
-    {{-- ── Info readonly ──────────────────────────────────────────────────────── --}}
-    <div class="bg-slate-50 rounded-2xl border border-slate-200 px-6 py-5">
-      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Informasi Akun (tidak dapat diubah)</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-        <div>
-          <p class="text-xs text-slate-400">Nama</p>
-          <p class="font-semibold text-slate-700">{{ $candidate->name }}</p>
-        </div>
-        <div>
-          <p class="text-xs text-slate-400">Nomor Urut</p>
-          <p class="font-semibold text-slate-700">{{ $candidate->number }}</p>
-        </div>
-        @if($candidate->faculty)
-        <div>
-          <p class="text-xs text-slate-400">Fakultas</p>
-          <p class="font-semibold text-slate-700">{{ $candidate->faculty }}</p>
-        </div>
-        @endif
-        @if($candidate->department)
-        <div>
-          <p class="text-xs text-slate-400">Program Studi</p>
-          <p class="font-semibold text-slate-700">{{ $candidate->department }}</p>
-        </div>
-        @endif
-        @if($candidate->alumni)
-        <div>
-          <p class="text-xs text-slate-400">NIM</p>
-          <p class="font-semibold text-slate-700">{{ $candidate->alumni->nim }}</p>
-        </div>
-        @endif
-      </div>
-    </div>
-
-    {{-- Tombol simpan --}}
-    <div class="flex justify-end">
-      <button type="submit"
-              class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white
-                     text-sm font-semibold px-6 py-3 rounded-xl transition shadow-sm shadow-brand-200">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-        </svg>
-        Simpan Perubahan
-      </button>
     </div>
 
   </form>
+
+  {{-- ═══ FORM: PROFIL & PERKENALAN ═══ --}}
+  <form action="{{ route('kandidat.profil.update') }}" method="POST"
+        id="formProfil" onsubmit="return syncProfil()" class="space-y-0">
+    @csrf @method('PUT')
+    <input type="hidden" name="profile" id="profileInput">
+
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100">
+        <h3 class="font-semibold text-slate-900">Profil &amp; Perkenalan</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Perkenalkan diri Anda kepada pemilih. Maks. <strong>500 kata</strong>.</p>
+      </div>
+      <div class="p-6">
+
+        {{-- Quill editor --}}
+        <div id="profileEditor"></div>
+
+        {{-- Word counter + progress bar --}}
+        <div class="flex items-center justify-between mt-2 px-1">
+          <span id="wordWarning" class="text-xs text-red-500 hidden">Batas 500 kata tercapai. Kurangi isi sebelum menyimpan.</span>
+          <span class="flex-1"></span>
+          <span class="text-xs text-slate-400">
+            <span id="wordCount">0</span> / 500 kata
+          </span>
+        </div>
+        <div class="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="wordBar" class="h-full bg-brand-500 rounded-full transition-all duration-200" style="width:0%"></div>
+        </div>
+
+      </div>
+      <div class="px-6 pb-5 flex justify-end">
+        <button type="submit" id="profileSubmitBtn"
+                class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Simpan Profil
+        </button>
+      </div>
+    </div>
+
+  </form>
+
 </div>
 @endsection
 
 @push('scripts')
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
-const quill = new Quill('#quillEditor', {
+const TOOLBAR = [
+  [{ header: [2, 3, false] }],
+  ['bold', 'italic', 'underline'],
+  [{ list: 'ordered' }, { list: 'bullet' }],
+  ['link', 'clean'],
+];
+
+/* ── Quill: Misi ── */
+const quillMisi = new Quill('#misiEditor', {
   theme: 'snow',
-  placeholder: 'Tuliskan profil dan perkenalan Anda di sini...',
-  modules: {
-    toolbar: [
-      [{ header: [2, 3, false] }],
-      ['bold', 'italic', 'underline'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link', 'clean'],
-    ],
-  },
+  placeholder: 'Tuliskan misi-misi yang akan Anda jalankan...',
+  modules: { toolbar: TOOLBAR },
 });
 
-@if($candidate->profile)
-quill.clipboard.dangerouslyPasteHTML({!! json_encode($candidate->profile) !!});
+@if($c->mission)
+quillMisi.clipboard.dangerouslyPasteHTML({!! json_encode($c->mission) !!});
+@endif
+@if(old('mission'))
+quillMisi.clipboard.dangerouslyPasteHTML({!! json_encode(old('mission')) !!});
 @endif
 
+function syncMisi() {
+  const html = quillMisi.root.innerHTML;
+  document.getElementById('missionInput').value = (html === '<p><br></p>') ? '' : html;
+}
+
+/* ── Quill: Profil & Perkenalan ── */
+const quillProfil = new Quill('#profileEditor', {
+  theme: 'snow',
+  placeholder: 'Tuliskan latar belakang, pengalaman, dan alasan mencalonkan diri Anda di sini...',
+  modules: { toolbar: TOOLBAR },
+});
+
+@if($c->profile)
+quillProfil.clipboard.dangerouslyPasteHTML({!! json_encode($c->profile) !!});
+@endif
 @if(old('profile'))
-quill.clipboard.dangerouslyPasteHTML({!! json_encode(old('profile')) !!});
+quillProfil.clipboard.dangerouslyPasteHTML({!! json_encode(old('profile')) !!});
 @endif
 
-function syncQuill() {
-  const html = quill.root.innerHTML;
+function syncProfil() {
+  const html = quillProfil.root.innerHTML;
   document.getElementById('profileInput').value = (html === '<p><br></p>') ? '' : html;
+  return true;
 }
 
-function previewFoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img  = document.getElementById('fotoPreview');
-    const icon = document.getElementById('fotoIcon');
-    img.src = e.target.result;
-    img.classList.remove('hidden');
-    icon.classList.add('hidden');
-  };
-  reader.readAsDataURL(file);
+/* ── Word counter (baca dari teks Quill) ── */
+function countProfileWords() {
+  const MAX     = 500;
+  const text    = quillProfil.getText().trim();
+  const words   = text === '' ? [] : text.split(/\s+/);
+  const count   = words.length;
+  const pct     = Math.min(count / MAX * 100, 100);
+
+  document.getElementById('wordCount').textContent = count;
+  document.getElementById('wordBar').style.width   = pct + '%';
+
+  const bar     = document.getElementById('wordBar');
+  const warning = document.getElementById('wordWarning');
+  const btn     = document.getElementById('profileSubmitBtn');
+
+  if (count > MAX) {
+    bar.classList.remove('bg-brand-500', 'bg-amber-400');
+    bar.classList.add('bg-red-500');
+    warning.classList.remove('hidden');
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+  } else if (count >= Math.floor(MAX * 0.85)) {
+    bar.classList.remove('bg-brand-500', 'bg-red-500');
+    bar.classList.add('bg-amber-400');
+    warning.classList.add('hidden');
+    btn.disabled = false;
+    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+  } else {
+    bar.classList.remove('bg-amber-400', 'bg-red-500');
+    bar.classList.add('bg-brand-500');
+    warning.classList.add('hidden');
+    btn.disabled = false;
+    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
 }
+
+quillProfil.on('text-change', countProfileWords);
+countProfileWords();
 </script>
 @endpush

@@ -39,7 +39,7 @@ class AlumniRegisterController extends Controller
         if (!$alumni) {
             return back()
                 ->withInput()
-                ->withErrors(['nim' => 'Data tidak ditemukan. Pastikan NIM dan tanggal lahir sesuai data yang terdaftar.']);
+                ->with('alumni_not_found', true);
         }
 
         // Cek apakah sudah punya akun

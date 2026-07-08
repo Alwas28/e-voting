@@ -23,9 +23,7 @@
 
     {{-- Logo --}}
     <div class="flex items-center justify-center gap-3 mb-8">
-      <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
-        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      </div>
+      <img src="{{ asset('images/Logo2.png') }}" alt="Logo" class="w-12 h-12 object-contain" />
       <div>
         <p class="text-white font-bold text-xl leading-tight">E-Voting</p>
         <p class="text-indigo-300 text-xs">Sistem Pemilihan Digital</p>
@@ -64,17 +62,51 @@
           Masukkan NIM dan tanggal lahir Anda sesuai data yang terdaftar.
         </p>
 
-        {{-- Error --}}
-        @if ($errors->any())
+        {{-- Data tidak ditemukan → tampilkan tombol Google Form --}}
+        @if(session('alumni_not_found'))
+          @php $googleFormUrl = \App\Models\Setting::get('google_form_url'); @endphp
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 shrink-0 mt-0.5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="flex-1">
+                <p class="font-semibold text-amber-800 text-sm">Data Tidak Ditemukan</p>
+                <p class="text-amber-700 text-sm mt-1">
+                  NIM dan tanggal lahir Anda tidak terdaftar dalam sistem. Pastikan data yang dimasukkan sudah benar.
+                </p>
+                @if($googleFormUrl)
+                <p class="text-amber-700 text-sm mt-2">
+                  Jika Anda alumni yang belum terdaftar, silakan isi formulir pendaftaran berikut:
+                </p>
+                <a href="{{ $googleFormUrl }}" target="_blank"
+                   class="inline-flex items-center gap-2 mt-3 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+                  <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/>
+                  </svg>
+                  Daftar via Google Form
+                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                </a>
+                @endif
+              </div>
+            </div>
+          </div>
+
+        {{-- Error umum (validasi, dll) --}}
+        @elseif($errors->any())
           <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
-            <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
             <p>{{ $errors->first() }}</p>
           </div>
-        @endif
-
-        @if (session('error'))
+        @elseif(session('error'))
           <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
-            <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
             <p>{{ session('error') }}</p>
           </div>
         @endif

@@ -25,13 +25,33 @@ Route::get('/', function () {
     $dptSchedule      = $activePeriod?->dptSchedule();
     $electionSchedule = $activePeriod?->electionSchedule();
 
-    return view('welcome', compact('candidates', 'activePeriod', 'dptSchedule', 'electionSchedule'));
+    $documents = \App\Models\Document::where('is_published', true)
+        ->orderBy('sort_order')
+        ->orderByDesc('created_at')
+        ->get();
+
+    // Konversi URL YouTube ke format embed
+    $rawYoutube     = \App\Models\Setting::get('youtube_url', '');
+    $youtubeEmbed   = null;
+    if ($rawYoutube) {
+        if (preg_match('/[?&]v=([^&\s]+)/', $rawYoutube, $m) ||
+            preg_match('/youtu\.be\/([^?&\s]+)/', $rawYoutube, $m) ||
+            preg_match('/youtube\.com\/embed\/([^?&\s]+)/', $rawYoutube, $m)) {
+            $youtubeEmbed = 'https://www.youtube.com/embed/' . $m[1];
+        }
+    }
+    $youtubeTitle = \App\Models\Setting::get('youtube_title', 'Panduan Video');
+
+    return view('welcome', compact(
+        'candidates', 'activePeriod', 'dptSchedule', 'electionSchedule',
+        'documents', 'youtubeEmbed', 'youtubeTitle'
+    ));
 });
 
 Route::get('/kandidat/{candidate}', function (\App\Models\Candidate $candidate) {
     abort_if(!$candidate->is_active, 404);
     return view('public.candidate-profile', compact('candidate'));
-})->name('candidate.profile');
+})->name('candidate.profile')->where('candidate', '[0-9]+');
 
 Route::get('/dashboard', [AdminController::class, 'dashboard'])
     ->middleware(['auth', 'verified'])
@@ -87,7 +107,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     // Pengaturan
-    Route::get('/settings', [AdminController::class, 'settings'])->middleware('permission:settings.view')->name('settings');
+    Route::get('/settings',  [AdminController::class, 'settings'])->middleware('permission:settings.view')->name('settings');
+    Route::post('/settings', [AdminController::class, 'updateSettings'])->middleware('permission:settings.manage')->name('settings.update');
+
+    // Dokumen Publik
+    Route::get('/documents',                        [AdminController::class, 'documents'])->middleware('permission:settings.view')->name('documents');
+    Route::post('/documents',                       [AdminController::class, 'storeDocument'])->middleware('permission:settings.manage')->name('documents.store');
+    Route::patch('/documents/{document}/toggle',    [AdminController::class, 'toggleDocument'])->middleware('permission:settings.manage')->name('documents.toggle');
+    Route::delete('/documents/{document}',          [AdminController::class, 'destroyDocument'])->middleware('permission:settings.manage')->name('documents.destroy');
 
     // Pengguna
     Route::get('/users',                 [UserController::class, 'index'])->middleware('permission:users.view')->name('users.index');
@@ -104,9 +131,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile',          [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile',        [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile',       [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile/password', [ProfileController::class, 'password'])->name('profile.password');
 });
 
 // Kandidat — hanya role kandidat

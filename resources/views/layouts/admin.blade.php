@@ -92,12 +92,20 @@
   <!-- Sidebar -->
   <aside id="sidebar" class="sidebar-surface fixed lg:static inset-y-0 left-0 z-40 w-64 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 flex flex-col">
     <div class="sidebar-divider h-16 flex items-center gap-3 px-6">
-      <div class="sidebar-logo w-9 h-9 rounded-lg flex items-center justify-center">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      </div>
+      <img src="{{ asset('images/Logo2.png') }}" alt="Logo" class="w-9 h-9 object-contain rounded-lg" />
       <div>
         <p class="font-semibold leading-tight">E-Voting</p>
-        <p class="sidebar-muted text-xs">Panel Admin</p>
+        @php
+          $u         = auth()->user();
+          $roleLabel = match(true) {
+            $u->hasRole('superadmin') => 'Panel Super Admin',
+            $u->hasRole('admin')      => 'Panel Admin',
+            $u->hasRole('kandidat')   => 'Panel Kandidat',
+            $u->hasRole('alumni')     => 'Panel Alumni',
+            default                   => 'Panel Pengguna',
+          };
+        @endphp
+        <p class="sidebar-muted text-xs">{{ $roleLabel }}</p>
       </div>
     </div>
 
@@ -147,12 +155,12 @@
       </a>
       @endif
 
-      {{-- Profil Saya (kandidat) --}}
+      {{-- Visi & Misi (kandidat) --}}
       @if($u->hasRole('kandidat'))
       <a href="{{ route('kandidat.profil.edit') }}"
          class="nav-item {{ request()->routeIs('kandidat.profil*') ? 'is-active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-lg">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Profil Saya
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Visi &amp; Misi
       </a>
       @endif
 
@@ -165,8 +173,8 @@
       </a>
       @endif
 
-      {{-- Hasil Voting: alumni juga bisa lihat --}}
-      @if($u->hasPermission('election.results'))
+      {{-- Hasil Voting: hanya admin / superadmin --}}
+      @if($u->hasPermission('election.results') && ($u->hasRole('admin') || $u->hasRole('superadmin')))
       <a href="{{ route('admin.results') }}"
          class="nav-item {{ request()->routeIs('admin.results*') ? 'is-active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-lg">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -198,6 +206,15 @@
          class="nav-item {{ request()->routeIs('admin.roles*') ? 'is-active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-lg">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         Role & Akses
+      </a>
+      @endif
+
+      {{-- Dokumen --}}
+      @if($u->hasPermission('settings.view'))
+      <a href="{{ route('admin.documents') }}"
+         class="nav-item {{ request()->routeIs('admin.documents*') ? 'is-active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Dokumen
       </a>
       @endif
 
@@ -267,7 +284,7 @@
               Profile
             </a>
 
-            <a href="{{ route('profile.edit') }}#update-password" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+            <a href="{{ route('profile.password') }}" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
               <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
               Ubah Password
             </a>
@@ -303,7 +320,7 @@
     </header>
 
     <!-- Page Content -->
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1 overflow-y-auto pb-20 lg:pb-0">
       {{-- Global flash messages --}}
       @if(session('error'))
       <div class="mx-4 sm:mx-6 mt-4 rounded-xl bg-red-50 border border-red-200 text-red-800 px-4 py-3 flex items-center gap-3 text-sm">
@@ -492,5 +509,75 @@
   }
 </script>
 @stack('scripts')
+
+@php $u = auth()->user(); @endphp
+@if($u && ($u->hasRole('alumni') || $u->hasRole('kandidat')))
+{{-- ═══ MOBILE BOTTOM NAV (alumni / kandidat) ═══ --}}
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200" style="padding-bottom: env(safe-area-inset-bottom)">
+  <div class="flex items-end justify-around px-1 h-16">
+
+    {{-- Home --}}
+    @php $homeActive = request()->routeIs('admin.dashboard'); @endphp
+    <a href="{{ route('admin.dashboard') }}"
+       class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition
+              {{ $homeActive ? 'text-brand-600' : 'text-slate-400' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      <span class="text-[10px] font-medium leading-none">Home</span>
+    </a>
+
+    {{-- Daftar DPT --}}
+    @php $dptActive = request()->routeIs('admin.dpt*'); @endphp
+    <a href="{{ route('admin.dpt.register') }}"
+       class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition
+              {{ $dptActive ? 'text-brand-600' : 'text-slate-400' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+      </svg>
+      <span class="text-[10px] font-medium leading-none">DPT</span>
+    </a>
+
+    {{-- Vote (FAB tengah) --}}
+    @php $voteActive = request()->routeIs('voting*'); @endphp
+    <div class="flex flex-col items-center justify-end flex-1" style="margin-bottom:6px">
+      <a href="{{ route('voting') }}"
+         class="flex flex-col items-center gap-1 transition active:scale-95">
+        <span class="w-14 h-14 rounded-full shadow-xl flex items-center justify-center
+                     {{ $voteActive ? 'bg-brand-700 ring-4 ring-brand-200' : 'bg-brand-600' }}"
+              style="margin-top:-24px">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </span>
+        <span class="text-[10px] font-semibold leading-none mt-1 {{ $voteActive ? 'text-brand-600' : 'text-slate-500' }}">Vote</span>
+      </a>
+    </div>
+
+    {{-- Profil --}}
+    @php $profileActive = request()->routeIs('profile.edit'); @endphp
+    <a href="{{ route('profile.edit') }}"
+       class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition
+              {{ $profileActive ? 'text-brand-600' : 'text-slate-400' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+      </svg>
+      <span class="text-[10px] font-medium leading-none">Profil</span>
+    </a>
+
+    {{-- Password --}}
+    @php $pwdActive = request()->routeIs('profile.password'); @endphp
+    <a href="{{ route('profile.password') }}"
+       class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition
+              {{ $pwdActive ? 'text-brand-600' : 'text-slate-400' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+      </svg>
+      <span class="text-[10px] font-medium leading-none">Password</span>
+    </a>
+
+  </div>
+</nav>
+@endif
 </body>
 </html>

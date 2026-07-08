@@ -4,48 +4,97 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Candidate;
+use App\Models\Document;
 use App\Models\ElectionPeriod;
+use App\Models\Setting;
 use App\Models\Vote;
 use App\Models\Voter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
     public function dashboard()
     {
+        $user = auth()->user();
+
+        // Real DPT stats
+        $totalVoters      = Voter::where('is_active', true)->count();
+        $voted            = Voter::where('is_active', true)->where('has_voted', true)->count();
+        $notVoted         = $totalVoters - $voted;
+        $participationPct = $totalVoters > 0 ? round($voted / $totalVoters * 100, 1) : 0;
+        $totalCandidates  = Candidate::whereHas('period', fn($q) => $q->where('is_active', true))
+            ->where('is_active', true)->count();
+
         $stats = [
-            'total_voters'      => 12480,
-            'voted'             => 8215,
-            'not_voted'         => 4265,
-            'participation_pct' => 65.8,
-            'remaining_pct'     => 34.2,
-            'total_candidates'  => 5,
+            'total_voters'      => $totalVoters,
+            'voted'             => $voted,
+            'not_voted'         => $notVoted,
+            'participation_pct' => $participationPct,
+            'remaining_pct'     => round(100 - $participationPct, 1),
+            'total_candidates'  => $totalCandidates,
         ];
 
-        $candidates = [
-            ['name' => 'Budi Santoso',  'votes' => 3420, 'pct' => 41.6, 'color' => 'bg-brand-600'],
-            ['name' => 'Siti Aminah',   'votes' => 2890, 'pct' => 35.2, 'color' => 'bg-blue-500'],
-            ['name' => 'Andi Wijaya',   'votes' => 1205, 'pct' => 14.7, 'color' => 'bg-amber-500'],
-            ['name' => 'Dewi Lestari',  'votes' =>  700, 'pct' =>  8.5, 'color' => 'bg-pink-500'],
-        ];
+        // Voter record milik user yang sedang login (alumni/kandidat)
+        $userVoter = $user->alumni?->voter;
 
-        $electionEnd = strtotime('today 17:00');
-        $election = [
-            'status'        => 'active',
-            'start'         => '26 Jun 2026, 08:00',
-            'end'           => '26 Jun 2026, 17:00',
-            'remaining'     => '04 : 32 : 18',
-            'end_timestamp' => $electionEnd,
-        ];
+        // Vote tally — hanya admin/superadmin, data dari DB
+        $candidates = [];
+        if ($user->hasRole('admin') || $user->hasRole('superadmin')) {
+            $colors = ['bg-brand-600', 'bg-blue-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500'];
+            $totalVotes = Vote::count();
+            $candidates = Candidate::whereHas('period', fn($q) => $q->where('is_active', true))
+                ->where('is_active', true)
+                ->withCount('votes')
+                ->orderBy('number')
+                ->get()
+                ->map(function ($c, $i) use ($totalVotes, $colors) {
+                    $pct = $totalVotes > 0 ? round($c->votes_count / $totalVotes * 100, 1) : 0;
+                    return [
+                        'name'  => $c->name,
+                        'votes' => $c->votes_count,
+                        'pct'   => $pct,
+                        'color' => $colors[$i % count($colors)],
+                    ];
+                })
+                ->toArray();
+        }
 
-        $recentActivity = [
-            ['voter_id' => 'VT-10482', 'name' => 'Rahmat Hidayat', 'time' => '12:28', 'status' => 'success'],
-            ['voter_id' => 'VT-10481', 'name' => 'Nur Fadilah',    'time' => '12:26', 'status' => 'success'],
-            ['voter_id' => 'VT-10480', 'name' => 'Joko Prabowo',   'time' => '12:24', 'status' => 'failed'],
-            ['voter_id' => 'VT-10479', 'name' => 'Maria Ulfa',     'time' => '12:21', 'status' => 'success'],
-        ];
+        // Status pemilihan dari jadwal aktif
+        $activePeriod = ElectionPeriod::active();
+        $activePeriod?->load('schedules');
+        $electionSchedule = $activePeriod?->electionSchedule();
 
-        return view('admin.dashboard', compact('stats', 'candidates', 'election', 'recentActivity'));
+        $election = ['status' => 'none', 'start' => '—', 'end' => '—', 'end_timestamp' => null];
+        if ($electionSchedule) {
+            $election['status']        = match ($electionSchedule->status) {
+                'berlangsung'   => 'active',
+                'belum_dimulai' => 'upcoming',
+                'selesai'       => 'ended',
+                default         => 'none',
+            };
+            $election['start']         = $electionSchedule->start_date?->translatedFormat('d M Y, H:i') ?? '—';
+            $election['end']           = $electionSchedule->end_date?->translatedFormat('d M Y, H:i') ?? '—';
+            $election['end_timestamp'] = $electionSchedule->end_date?->timestamp;
+        }
+
+        // Aktivitas terbaru — hanya admin/superadmin
+        $recentActivity = [];
+        if ($user->hasRole('admin') || $user->hasRole('superadmin')) {
+            $recentActivity = Voter::where('has_voted', true)
+                ->orderByDesc('voted_at')
+                ->limit(5)
+                ->get()
+                ->map(fn($v) => [
+                    'voter_id' => $v->voter_code,
+                    'name'     => $v->name,
+                    'time'     => $v->voted_at?->format('H:i') ?? '—',
+                    'status'   => 'success',
+                ])
+                ->toArray();
+        }
+
+        return view('admin.dashboard', compact('stats', 'candidates', 'election', 'recentActivity', 'userVoter'));
     }
 
     public function voters(Request $request)
@@ -211,6 +260,81 @@ class AdminController extends Controller
 
     public function settings()
     {
-        return view('admin.settings');
+        $settings = [
+            'google_form_url'  => Setting::get('google_form_url', ''),
+            'site_name'        => Setting::get('site_name', 'E-Voting'),
+            'site_description' => Setting::get('site_description', 'Sistem Pemilihan Digital Alumni'),
+            'youtube_url'      => Setting::get('youtube_url', ''),
+            'youtube_title'    => Setting::get('youtube_title', 'Panduan Video'),
+        ];
+        return view('admin.settings', compact('settings'));
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $data = $request->validate([
+            'google_form_url'  => 'nullable|url|max:500',
+            'site_name'        => 'nullable|string|max:100',
+            'site_description' => 'nullable|string|max:255',
+            'youtube_url'      => 'nullable|url|max:500',
+            'youtube_title'    => 'nullable|string|max:100',
+        ]);
+
+        foreach ($data as $key => $value) {
+            Setting::set($key, $value ?: null);
+        }
+
+        return back()->with('success', 'Pengaturan berhasil disimpan.');
+    }
+
+    public function documents()
+    {
+        $documents = Document::orderBy('sort_order')->orderByDesc('created_at')->get();
+        return view('admin.documents', compact('documents'));
+    }
+
+    public function storeDocument(Request $request)
+    {
+        $request->validate([
+            'title'        => 'required|string|max:200',
+            'description'  => 'nullable|string|max:500',
+            'file'         => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip|max:20480',
+            'sort_order'   => 'nullable|integer',
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('documents', 'public');
+
+        Document::create([
+            'title'        => $request->title,
+            'description'  => $request->description,
+            'file_path'    => $path,
+            'file_name'    => $file->getClientOriginalName(),
+            'file_size'    => $this->formatFileSize($file->getSize()),
+            'is_published' => $request->boolean('is_published', true),
+            'sort_order'   => $request->input('sort_order', 0),
+        ]);
+
+        return back()->with('success', 'Dokumen berhasil diunggah.');
+    }
+
+    public function toggleDocument(Document $document)
+    {
+        $document->update(['is_published' => !$document->is_published]);
+        return back()->with('success', 'Status dokumen diperbarui.');
+    }
+
+    public function destroyDocument(Document $document)
+    {
+        Storage::disk('public')->delete($document->file_path);
+        $document->delete();
+        return back()->with('success', 'Dokumen berhasil dihapus.');
+    }
+
+    private function formatFileSize(int $bytes): string
+    {
+        if ($bytes >= 1048576) return round($bytes / 1048576, 1) . ' MB';
+        if ($bytes >= 1024)    return round($bytes / 1024, 1) . ' KB';
+        return $bytes . ' B';
     }
 }

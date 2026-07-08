@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class Candidate extends Model
@@ -27,6 +28,11 @@ class Candidate extends Model
     public function alumni(): BelongsTo
     {
         return $this->belongsTo(Alumni::class);
+    }
+
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class);
     }
 
     public function getPhotoUrlAttribute(): string

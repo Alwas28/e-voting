@@ -21,11 +21,7 @@
 
     {{-- Logo --}}
     <div class="flex items-center justify-center gap-3 mb-8">
-      <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
-        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-      </div>
+      <img src="{{ asset('images/Logo2.png') }}" alt="Logo" class="w-12 h-12 object-contain drop-shadow" />
       <div>
         <p class="text-white font-bold text-xl leading-tight">E-Voting</p>
         <p class="text-indigo-300 text-xs">Sistem Pemilihan Digital</p>

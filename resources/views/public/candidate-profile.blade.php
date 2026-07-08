@@ -3,7 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Profil {{ $candidate->name }} — E-Voting</title>
+@php
+  $siteName   = \App\Models\Setting::get('site_name', 'E-Voting');
+  $pageTitle  = 'Profil ' . $candidate->name . ' — ' . $siteName;
+  $pageDesc   = 'Kenali kandidat ' . $candidate->name . ($candidate->vision ? ': ' . \Illuminate\Support\Str::limit($candidate->vision, 120) : '');
+  $thumbUrl   = $candidate->photo ? asset('storage/' . $candidate->photo) : asset('images/Logo2.png');
+  $pageUrl    = url('/kandidat/' . $candidate->id);
+@endphp
+<title>{{ $pageTitle }}</title>
+<meta name="description" content="{{ $pageDesc }}" />
+{{-- Open Graph --}}
+<meta property="og:type"        content="profile" />
+<meta property="og:url"         content="{{ $pageUrl }}" />
+<meta property="og:title"       content="{{ $pageTitle }}" />
+<meta property="og:description" content="{{ $pageDesc }}" />
+<meta property="og:image"       content="{{ $thumbUrl }}" />
+<meta property="og:locale"      content="id_ID" />
+<meta property="og:site_name"   content="{{ $siteName }}" />
+{{-- Twitter Card --}}
+<meta name="twitter:card"        content="summary_large_image" />
+<meta name="twitter:title"       content="{{ $pageTitle }}" />
+<meta name="twitter:description" content="{{ $pageDesc }}" />
+<meta name="twitter:image"       content="{{ $thumbUrl }}" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -100,7 +121,7 @@
       <div class="relative z-10 flex items-center gap-4 px-7 py-5">
 
         {{-- Logo --}}
-        <img src="{{ asset('images/logo.png') }}" alt="Logo UMK"
+        <img src="{{ asset('images/Logo2.png') }}" alt="Logo UMK"
              class="w-16 h-16 object-contain drop-shadow-lg shrink-0">
 
         {{-- Garis pemisah vertikal --}}

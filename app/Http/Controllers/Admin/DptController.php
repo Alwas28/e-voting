@@ -36,7 +36,7 @@ class DptController extends Controller
 
             if (!$dptSchedule || $dptSchedule->status !== 'berlangsung') {
                 $msg = match($dptSchedule?->status) {
-                    'belum_dimulai' => 'Pendaftaran DPT belum dibuka. Dimulai ' . $dptSchedule->start_date->translatedFormat('d F Y, H:i') . ' WIB.',
+                    'belum_dimulai' => 'Pendaftaran DPT belum dibuka. Dimulai ' . $dptSchedule->start_date->translatedFormat('d F Y, H:i') . ' WITA.',
                     'selesai'       => 'Periode Pendaftaran DPT telah berakhir.',
                     default         => 'Pendaftaran DPT belum dijadwalkan. Hubungi administrator.',
                 };

@@ -185,7 +185,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
               Kembali
             </a>
-            <button type="submit"
+            <button type="button" id="btnSubmit" onclick="showSavePopup()"
                     class="flex-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
                            text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
@@ -198,6 +198,77 @@
 
     <p class="text-center text-indigo-400 text-xs mt-6">&copy; {{ date('Y') }} E-Voting System</p>
   </div>
+
+{{-- Popup: Simpan Kredensial --}}
+<div id="savePopup" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none!important">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+
+    {{-- Header --}}
+    <div class="bg-amber-50 border-b border-amber-100 px-6 py-5 flex items-start gap-4">
+      <div class="w-11 h-11 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-bold text-slate-800 text-base">Simpan Data Login Anda!</p>
+        <p class="text-sm text-amber-700 mt-0.5">Catat atau screenshot email dan password di bawah agar tidak terlupa.</p>
+      </div>
+    </div>
+
+    {{-- Kredensial --}}
+    <div class="px-6 py-5 space-y-3">
+
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+        <p class="text-xs font-medium text-slate-400 mb-1">Email</p>
+        <div class="flex items-center justify-between gap-2">
+          <p id="popupEmail" class="text-sm font-semibold text-slate-800 break-all"></p>
+          <button onclick="copyText('popupEmail', this)" title="Salin"
+                  class="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+        <p class="text-xs font-medium text-slate-400 mb-1">Password</p>
+        <div class="flex items-center justify-between gap-2">
+          <p id="popupPassword" class="text-sm font-semibold text-slate-800 font-mono tracking-widest"></p>
+          <button onclick="copyText('popupPassword', this)" title="Salin"
+                  class="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-2 text-xs text-slate-500 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+        <svg class="w-4 h-4 text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Password tidak bisa dilihat lagi setelah akun dibuat. Simpan sekarang sebelum melanjutkan.
+      </div>
+    </div>
+
+    {{-- Actions --}}
+    <div class="px-6 pb-6 flex flex-col gap-2">
+      <button id="btnConfirm" onclick="confirmAndSubmit()"
+              class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        Sudah Disimpan, Buat Akun
+      </button>
+      <button onclick="closePopup()"
+              class="w-full border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium py-2.5 rounded-xl transition text-sm">
+        Kembali &amp; Periksa Lagi
+      </button>
+    </div>
+
+  </div>
+</div>
 
 <script>
   function togglePwd(id, btn) {
@@ -237,6 +308,43 @@
       label.className   = 'text-xs mt-1 ' + (txtClrs[score - 1] || 'text-red-500');
     }
   });
+
+  function showSavePopup() {
+    const form  = document.querySelector('form[action="{{ route("alumni.register.submit") }}"]');
+    const email = document.getElementById('email').value.trim();
+    const pwd   = document.getElementById('password').value;
+
+    // Trigger HTML5 validation first
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    document.getElementById('popupEmail').textContent    = email || '(tidak diisi)';
+    document.getElementById('popupPassword').textContent = pwd   || '(tidak diisi)';
+
+    const popup = document.getElementById('savePopup');
+    popup.style.cssText = 'display:flex!important';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePopup() {
+    document.getElementById('savePopup').style.cssText = 'display:none!important';
+    document.body.style.overflow = '';
+  }
+
+  function confirmAndSubmit() {
+    const btn = document.getElementById('btnConfirm');
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Memproses...';
+    document.querySelector('form[action="{{ route("alumni.register.submit") }}"]').submit();
+  }
+
+  function copyText(id, btn) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+      setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    });
+  }
 </script>
 </body>
 </html>

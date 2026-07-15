@@ -41,6 +41,30 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
+    public function updateAlumniData(Request $request): RedirectResponse
+    {
+        $user   = $request->user();
+        $alumni = $user->alumni;
+
+        if (!$alumni) {
+            return Redirect::route('profile.edit')->with('error', 'Data alumni tidak ditemukan.');
+        }
+
+        $data = $request->validate([
+            'place_of_birth' => 'nullable|string|max:100',
+            'date_of_birth'  => 'nullable|date|before:today',
+            'phone'          => 'nullable|string|max:20',
+            'address'        => 'nullable|string|max:255',
+        ]);
+
+        // Sinkronkan email alumni dengan email akun
+        $data['email'] = $user->email;
+
+        $alumni->update($data);
+
+        return Redirect::route('profile.edit')->with('status', 'alumni-updated');
+    }
+
     /**
      * Delete the user's account.
      */

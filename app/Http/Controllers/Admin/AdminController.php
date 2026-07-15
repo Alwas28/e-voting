@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Candidate;
 use App\Models\Document;
 use App\Models\ElectionPeriod;
+use App\Models\ElectionSchedule;
 use App\Models\Setting;
 use App\Models\Vote;
 use App\Models\Voter;
@@ -94,7 +95,49 @@ class AdminController extends Controller
                 ->toArray();
         }
 
-        return view('admin.dashboard', compact('stats', 'candidates', 'election', 'recentActivity', 'userVoter'));
+        // DPT schedule — untuk popup reminder alumni
+        $dptSchedule = null;
+        if ($activePeriod) {
+            $dptSchedule = ElectionSchedule::forPeriodAndType($activePeriod, 'dpt_registration');
+        }
+
+        // Rekapitulasi per fakultas & program studi — hanya admin/superadmin
+        $byFaculty    = [];
+        $byDepartment = [];
+        if ($user->hasRole('admin') || $user->hasRole('superadmin')) {
+            $byFaculty = Voter::where('is_active', true)
+                ->selectRaw('faculty, COUNT(*) as total, SUM(has_voted) as voted')
+                ->groupBy('faculty')
+                ->orderBy('faculty')
+                ->get()
+                ->map(fn($r) => [
+                    'name'  => $r->faculty ?: 'Tidak Diketahui',
+                    'total' => (int) $r->total,
+                    'voted' => (int) $r->voted,
+                    'pct'   => $r->total > 0 ? round($r->voted / $r->total * 100, 1) : 0,
+                ])
+                ->toArray();
+
+            $byDepartment = Voter::where('is_active', true)
+                ->selectRaw('department, faculty, COUNT(*) as total, SUM(has_voted) as voted')
+                ->groupBy('department', 'faculty')
+                ->orderBy('faculty')
+                ->orderBy('department')
+                ->get()
+                ->map(fn($r) => [
+                    'name'    => $r->department ?: 'Tidak Diketahui',
+                    'faculty' => $r->faculty ?: '—',
+                    'total'   => (int) $r->total,
+                    'voted'   => (int) $r->voted,
+                    'pct'     => $r->total > 0 ? round($r->voted / $r->total * 100, 1) : 0,
+                ])
+                ->toArray();
+        }
+
+        return view('admin.dashboard', compact(
+            'stats', 'candidates', 'election', 'recentActivity',
+            'userVoter', 'dptSchedule', 'byFaculty', 'byDepartment'
+        ));
     }
 
     public function voters(Request $request)

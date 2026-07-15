@@ -81,9 +81,7 @@ class RolePermissionSeeder extends Seeder
             [
                 'name' => 'alumni', 'label' => 'Alumni',
                 'description' => 'Akun alumni — dapat mengikuti pemilihan.', 'is_system' => true,
-                'permissions' => Permission::whereIn('name', [
-                    'election.results',
-                ])->pluck('id'),
+                'permissions' => collect(),
             ],
         ];
 

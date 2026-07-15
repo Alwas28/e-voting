@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Alumni;
 use App\Models\Candidate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class AlumniController extends Controller
 {
@@ -58,6 +62,7 @@ class AlumniController extends Controller
             'place_of_birth'  => 'nullable|string|max:100',
             'date_of_birth'   => 'nullable|date|before:today',
             'graduation_year' => 'required|integer|min:1990|max:' . (date('Y') + 1),
+            'ipk'             => 'nullable|numeric|min:0|max:4',
             'email'           => 'nullable|email|max:100',
             'phone'           => 'nullable|string|max:20',
             'address'         => 'nullable|string|max:255',
@@ -77,6 +82,7 @@ class AlumniController extends Controller
             'place_of_birth'  => 'nullable|string|max:100',
             'date_of_birth'   => 'nullable|date|before:today',
             'graduation_year' => 'required|integer|min:1990|max:' . (date('Y') + 1),
+            'ipk'             => 'nullable|numeric|min:0|max:4',
             'email'           => 'nullable|email|max:100',
             'phone'           => 'nullable|string|max:20',
             'address'         => 'nullable|string|max:255',
@@ -107,5 +113,157 @@ class AlumniController extends Controller
         $alumnus->update(['is_active' => !$alumnus->is_active]);
         $status = $alumnus->is_active ? 'diaktifkan' : 'dinonaktifkan';
         return back()->with('success', "Alumni \"{$alumnus->name}\" berhasil {$status}.");
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+        ], [
+            'file.required' => 'Pilih file Excel terlebih dahulu.',
+            'file.mimes'    => 'File harus berformat .xlsx, .xls, atau .csv.',
+            'file.max'      => 'Ukuran file maksimal 5 MB.',
+        ]);
+
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+
+        // Skip header row
+        array_shift($rows);
+
+        $inserted = 0;
+        $skipped  = 0;
+        $errors   = [];
+
+        foreach ($rows as $i => $row) {
+            $rowNum = $i + 2;
+
+            // Skip completely empty rows
+            if (empty(array_filter($row, fn($v) => $v !== null && $v !== ''))) {
+                continue;
+            }
+
+            $data = [
+                'nim'             => trim((string) ($row[0] ?? '')),
+                'name'            => trim((string) ($row[1] ?? '')),
+                'faculty'         => trim((string) ($row[2] ?? '')),
+                'department'      => trim((string) ($row[3] ?? '')),
+                'place_of_birth'  => trim((string) ($row[4] ?? '')) ?: null,
+                'date_of_birth'   => trim((string) ($row[5] ?? '')) ?: null,
+                'graduation_year' => (int) ($row[6] ?? 0),
+                'ipk'             => ($row[7] !== null && $row[7] !== '') ? (float) $row[7] : null,
+                'email'           => trim((string) ($row[8] ?? '')) ?: null,
+                'phone'           => trim((string) ($row[9] ?? '')) ?: null,
+                'address'         => trim((string) ($row[10] ?? '')) ?: null,
+            ];
+
+            // Normalize date
+            if ($data['date_of_birth']) {
+                // PhpSpreadsheet may return date as Excel serial number
+                if (is_numeric($data['date_of_birth'])) {
+                    $data['date_of_birth'] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject(
+                        (float) $data['date_of_birth']
+                    )->format('Y-m-d');
+                } else {
+                    // Try to parse common date strings
+                    try {
+                        $data['date_of_birth'] = \Carbon\Carbon::parse($data['date_of_birth'])->format('Y-m-d');
+                    } catch (\Exception) {
+                        $data['date_of_birth'] = null;
+                    }
+                }
+            }
+
+            $validator = Validator::make($data, [
+                'nim'             => 'required|string|max:20|unique:alumni,nim',
+                'name'            => 'required|string|max:100',
+                'faculty'         => 'required|string|max:100',
+                'department'      => 'required|string|max:100',
+                'place_of_birth'  => 'nullable|string|max:100',
+                'date_of_birth'   => 'nullable|date|before:today',
+                'graduation_year' => 'required|integer|min:1990|max:' . (date('Y') + 1),
+                'ipk'             => 'nullable|numeric|min:0|max:4',
+                'email'           => 'nullable|email|max:100',
+                'phone'           => 'nullable|string|max:20',
+                'address'         => 'nullable|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                $skipped++;
+                $errors[] = "Baris {$rowNum} ({$data['nim']}): " . implode(', ', $validator->errors()->all());
+                continue;
+            }
+
+            Alumni::create($data);
+            $inserted++;
+        }
+
+        $message = "{$inserted} data alumni berhasil diimpor.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} baris dilewati karena tidak valid.";
+        }
+
+        if ($inserted === 0 && $skipped > 0) {
+            return back()
+                ->with('error', $message)
+                ->with('import_errors', array_slice($errors, 0, 20));
+        }
+
+        return back()
+            ->with('success', $message)
+            ->with('import_errors', $errors ? array_slice($errors, 0, 20) : null);
+    }
+
+    public function downloadTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Data Alumni');
+
+        // Headers
+        $headers = [
+            'NIM', 'Nama Lengkap', 'Fakultas', 'Jurusan/Prodi',
+            'Tempat Lahir', 'Tanggal Lahir (YYYY-MM-DD)',
+            'Tahun Lulus', 'IPK (0.00-4.00)', 'Email', 'No. HP', 'Alamat',
+        ];
+        foreach ($headers as $col => $header) {
+            $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col + 1) . '1';
+            $sheet->setCellValue($cell, $header);
+            $sheet->getStyle($cell)->getFont()->setBold(true);
+            $sheet->getStyle($cell)->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setRGB('1E40AF');
+            $sheet->getStyle($cell)->getFont()->getColor()->setRGB('FFFFFF');
+        }
+
+        // Sample row
+        $sample = [
+            '2020001234', 'Budi Santoso', 'Fakultas Teknik', 'Teknik Informatika',
+            'Kendari', '1998-05-15', '2022', '3.75', 'budi@email.com', '08123456789',
+            'Jl. Contoh No. 1, Kendari',
+        ];
+        foreach ($sample as $col => $val) {
+            $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col + 1) . '2';
+            $sheet->setCellValue($cell, $val);
+            $sheet->getStyle($cell)->getFont()->getColor()->setRGB('6B7280');
+        }
+
+        // Auto-width
+        foreach (range(1, count($headers)) as $col) {
+            $sheet->getColumnDimensionByColumn($col)->setAutoSize(true);
+        }
+
+        // Freeze header row
+        $sheet->freezePane('A2');
+
+        $writer   = new Xlsx($spreadsheet);
+        $filename = 'template_import_alumni.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control'       => 'max-age=0',
+        ]);
     }
 }

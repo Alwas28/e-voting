@@ -251,10 +251,10 @@ function renderResults(data) {
   document.getElementById('stat-bar').style.width   = (dpt.part_pct ?? 0) + '%';
 
   // Log feed
-  renderLog(data.recent_votes ?? [], data.candidates ?? []);
+  renderLog(data.recent_votes ?? []);
 }
 
-function renderLog(logs, candidates) {
+function renderLog(logs) {
   document.getElementById('logCount').textContent = logs.length;
 
   if (!logs.length) {
@@ -263,29 +263,18 @@ function renderLog(logs, candidates) {
     return;
   }
 
-  // Build color map candidateName → color
-  const colorMap = {};
-  candidates.forEach((c, i) => { colorMap[c.name] = PALETTE[i % PALETTE.length]; });
-
   document.getElementById('logFeed').innerHTML = logs.map((v, idx) => {
-    const color   = colorMap[v.candidate] ?? '#4f46e5';
     const initial = v.name ? v.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() : '??';
     return `
     <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition ${idx === 0 ? 'bg-green-50/60' : ''}">
-      <div class="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white"
-           style="background:${color}22; color:${color}">
+      <div class="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-bold bg-brand-50 text-brand-600">
         ${initial}
       </div>
       <div class="flex-1 min-w-0">
         <p class="font-semibold text-slate-800 text-sm truncate">${v.name}</p>
         <p class="text-xs text-slate-400 truncate">${v.nim ? v.nim + ' · ' : ''}${v.faculty || ''}</p>
       </div>
-      <div class="text-right shrink-0">
-        <span class="text-xs font-semibold px-2 py-0.5 rounded-full" style="background:${color}22;color:${color}">
-          No.${v.no}
-        </span>
-        <p class="text-xs text-slate-400 mt-1">${v.time}</p>
-      </div>
+      <p class="text-xs text-slate-400 shrink-0">${v.time}</p>
     </div>`;
   }).join('');
 }

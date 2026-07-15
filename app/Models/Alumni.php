@@ -14,13 +14,14 @@ class Alumni extends Model
     protected $fillable = [
         'nim', 'name', 'faculty', 'department',
         'place_of_birth', 'date_of_birth',
-        'graduation_year', 'email', 'phone', 'address', 'photo', 'is_active',
+        'graduation_year', 'ipk', 'email', 'phone', 'address', 'photo', 'is_active',
     ];
 
     protected $casts = [
         'is_active'       => 'boolean',
         'graduation_year' => 'integer',
         'date_of_birth'   => 'date',
+        'ipk'             => 'decimal:2',
     ];
 
     public function voter()

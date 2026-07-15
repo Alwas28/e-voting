@@ -59,7 +59,7 @@
       <div class="px-8 py-7">
         <h2 class="text-xl font-bold text-slate-800 mb-1">Verifikasi Data Alumni</h2>
         <p class="text-sm text-slate-500 mb-6">
-          Masukkan NIM dan tanggal lahir Anda sesuai data yang terdaftar.
+          Masukkan NIM dan IPK Anda sesuai data yang terdaftar.
         </p>
 
         {{-- Data tidak ditemukan → tampilkan tombol Google Form --}}
@@ -73,7 +73,7 @@
               <div class="flex-1">
                 <p class="font-semibold text-amber-800 text-sm">Data Tidak Ditemukan</p>
                 <p class="text-amber-700 text-sm mt-1">
-                  NIM dan tanggal lahir Anda tidak terdaftar dalam sistem. Pastikan data yang dimasukkan sudah benar.
+                  NIM dan IPK Anda tidak terdaftar dalam sistem. Pastikan data yang dimasukkan sudah benar.
                 </p>
                 @if($googleFormUrl)
                 <p class="text-amber-700 text-sm mt-2">
@@ -128,18 +128,20 @@
                             {{ $errors->has('nim') ? 'border-red-400 bg-red-50' : '' }}" />
             </div>
 
-            {{-- Tanggal lahir --}}
+            {{-- IPK --}}
             <div>
-              <label for="date_of_birth" class="block text-sm font-medium text-slate-700 mb-1.5">
-                Tanggal Lahir
+              <label for="ipk" class="block text-sm font-medium text-slate-700 mb-1.5">
+                IPK (Indeks Prestasi Kumulatif)
               </label>
-              <input type="date" id="date_of_birth" name="date_of_birth"
-                     value="{{ old('date_of_birth') }}"
+              <input type="number" id="ipk" name="ipk"
+                     value="{{ old('ipk') }}"
                      required
-                     max="{{ date('Y-m-d') }}"
+                     min="0" max="4" step="0.01"
+                     placeholder="Contoh: 3.75"
                      class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm
                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                            {{ $errors->has('date_of_birth') ? 'border-red-400 bg-red-50' : '' }}" />
+                            {{ $errors->has('ipk') ? 'border-red-400 bg-red-50' : '' }}" />
+              <p class="text-xs text-slate-400 mt-1.5">Gunakan titik (.) sebagai pemisah desimal, bukan koma. Contoh: <span class="font-mono">3.75</span></p>
             </div>
           </div>
 

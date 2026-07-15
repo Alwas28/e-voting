@@ -1,67 +1,38 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="csrf-token" content="{{ csrf_token() }}" />
-<title>Beri Suara — E-Voting</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: { extend: { colors: { brand: {
-      50:'#eef2ff',100:'#e0e7ff',500:'#6366f1',
-      600:'#4f46e5',700:'#4338ca',900:'#312e81'
-    }}}}
-  }
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@extends('layouts.admin')
+
+@section('title', 'Beri Suara')
+@section('page-title', 'Pilih Kandidat')
+
+@push('styles')
 <style>
-  body { font-family: 'Inter', sans-serif; }
   .cand-card.selected {
     border-color: #4f46e5;
     background-color: #eef2ff;
     box-shadow: 0 0 0 3px #c7d2fe;
   }
 </style>
-</head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+@endpush
 
-{{-- ══════ TOP BAR ══════ --}}
-<header class="bg-white border-b border-slate-200 sticky top-0 z-40">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-    <a href="{{ url('/') }}" class="flex items-center gap-2.5">
-      <div class="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-      </div>
-      <span class="font-bold text-lg text-slate-900 hidden sm:inline">E-Voting</span>
-    </a>
+@section('content')
+<div class="max-w-3xl mx-auto">
 
-    @if($electionSchedule && $electionSchedule->status === 'berlangsung')
-    <div class="flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-sm font-medium">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+  {{-- Timer banner --}}
+  @if($electionSchedule && $electionSchedule->status === 'berlangsung')
+  <div class="flex items-center justify-between bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl text-sm font-medium mb-6">
+    <div class="flex items-center gap-2">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
-      Sisa: <span id="timer">--:--:--</span>
+      Sisa waktu pemilihan
     </div>
-    @endif
-
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-semibold">
-        {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 2)) }}
-      </div>
-      <span class="text-sm font-medium text-slate-700 hidden sm:inline">{{ Auth::user()->name }}</span>
-    </div>
+    <span id="timer" class="font-mono font-bold text-base tabular-nums">--:--:--</span>
+    <span id="timerUnit" class="text-xs font-normal ml-1 hidden"></span>
   </div>
-</header>
+  @endif
 
-<main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
-
-{{-- ══════ STATE: SUDAH MEMILIH ══════ --}}
-@if($alreadyVoted || session('success_voted'))
-  <section class="text-center max-w-md mx-auto py-8">
+  {{-- ══════ STATE: SUDAH MEMILIH ══════ --}}
+  @if($alreadyVoted || session('success_voted'))
+  <section class="text-center max-w-sm mx-auto py-6">
     <div class="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center">
       <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -78,7 +49,9 @@
       </div>
       <div class="flex justify-between py-2 border-b border-slate-100">
         <span class="text-slate-500 text-sm">Waktu Memilih</span>
-        <span class="font-medium text-slate-900 text-sm">{{ \Carbon\Carbon::parse($voter->voted_at)->locale('id')->translatedFormat('d M Y, H:i') }} WIB</span>
+        <span class="font-medium text-slate-900 text-sm">
+          {{ \Carbon\Carbon::parse($voter->voted_at)->locale('id')->translatedFormat('d M Y, H:i') }} WIB
+        </span>
       </div>
       <div class="flex justify-between py-2">
         <span class="text-slate-500 text-sm">Status</span>
@@ -87,14 +60,18 @@
     </div>
     @endif
 
-    <a href="{{ route('admin.results') }}" class="mt-6 inline-flex items-center justify-center gap-2 w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-lg transition">
-      Lihat Hasil Sementara
+    <a href="{{ route('admin.dashboard') }}"
+       class="mt-6 inline-flex items-center justify-center gap-2 w-full border border-slate-300 text-slate-700 font-semibold py-3 rounded-xl hover:bg-slate-50 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      Kembali ke Dashboard
     </a>
   </section>
 
-{{-- ══════ STATE: BUKAN DPT ══════ --}}
-@elseif($notInDpt)
-  <section class="text-center max-w-md mx-auto py-8">
+  {{-- ══════ STATE: BUKAN DPT ══════ --}}
+  @elseif($notInDpt)
+  <section class="text-center max-w-sm mx-auto py-6">
     <div class="w-20 h-20 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
       <svg class="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -102,14 +79,15 @@
     </div>
     <h2 class="mt-6 text-2xl font-extrabold text-slate-900">Belum Terdaftar DPT</h2>
     <p class="mt-2 text-slate-600">Anda belum terdaftar sebagai pemilih. Daftarkan diri Anda terlebih dahulu.</p>
-    <a href="{{ route('admin.dpt.register') }}" class="mt-6 inline-flex items-center justify-center gap-2 w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-lg transition">
+    <a href="{{ route('admin.dpt.register') }}"
+       class="mt-6 inline-flex items-center justify-center gap-2 w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition">
       Daftar Sebagai Pemilih
     </a>
   </section>
 
-{{-- ══════ STATE: BELUM/SUDAH BUKA ══════ --}}
-@elseif($electionStatus !== 'berlangsung')
-  <section class="text-center max-w-md mx-auto py-8">
+  {{-- ══════ STATE: BELUM / SUDAH SELESAI ══════ --}}
+  @elseif($electionStatus !== 'berlangsung')
+  <section class="text-center max-w-sm mx-auto py-6">
     <div class="w-20 h-20 mx-auto rounded-full bg-slate-100 flex items-center justify-center">
       <svg class="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -131,15 +109,16 @@
     @else
     <p class="mt-2 text-slate-600">Jadwal pemilihan belum ditentukan. Pantau terus informasi resmi.</p>
     @endif
-    <a href="{{ url('/') }}" class="mt-6 inline-flex items-center justify-center gap-2 w-full border border-slate-300 text-slate-700 font-semibold py-3 rounded-lg hover:bg-slate-50 transition">
+    <a href="{{ url('/') }}"
+       class="mt-6 inline-flex items-center justify-center gap-2 w-full border border-slate-300 text-slate-700 font-semibold py-3 rounded-xl hover:bg-slate-50 transition">
       Kembali ke Beranda
     </a>
   </section>
 
-{{-- ══════ STATE: FORM VOTING ══════ --}}
-@else
+  {{-- ══════ STATE: FORM VOTING ══════ --}}
+  @else
 
-  {{-- ── STEP 1: VERIFIKASI WAJAH ── --}}
+  {{-- STEP 1: VERIFIKASI WAJAH --}}
   <section id="step-face">
     <div class="text-center max-w-xl mx-auto mb-8">
       <span class="inline-block text-xs font-semibold text-brand-700 bg-brand-50 px-3 py-1 rounded-full">
@@ -163,7 +142,7 @@
 
       <div id="faceMsg" class="hidden w-full rounded-xl border p-3 text-sm text-center"></div>
 
-      <button id="btnFaceStart" onclick="openCamera()"
+      <button id="btnFaceStart" onclick="prepareAndOpenCamera()"
               class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
@@ -180,7 +159,7 @@
     </div>
   </section>
 
-  {{-- ── STEP 2: PILIH KANDIDAT ── --}}
+  {{-- STEP 2: PILIH KANDIDAT --}}
   <section id="step-vote" class="hidden">
     <div class="text-center max-w-xl mx-auto mb-8">
       <span class="inline-block text-xs font-semibold text-brand-700 bg-brand-50 px-3 py-1 rounded-full">
@@ -227,12 +206,69 @@
     </div>
   </section>
 
-@endif
-</main>
+  @endif
 
-{{-- ══════ FULLSCREEN CAMERA OVERLAY ══════ --}}
-<div id="cameraModal" class="fixed inset-0 z-50 bg-black flex-col items-center justify-between" style="display:none">
+</div>
+@endsection
 
+{{-- ══════ MODALS (dirender di luar main, sebelum </body>) ══════ --}}
+@push('modals')
+
+{{-- PREP MODAL: loading sebelum kamera terbuka --}}
+<div id="prepModal" class="fixed inset-0 z-[68] items-end sm:items-center justify-center p-4" style="display:none">
+  <div class="absolute inset-0 bg-black/60" onclick="cancelPrep()"></div>
+  <div class="relative bg-white w-full max-w-xs rounded-2xl shadow-2xl overflow-hidden">
+    <div class="bg-brand-600 px-6 py-5 text-center">
+      <div class="w-12 h-12 mx-auto rounded-full bg-white/20 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+        </svg>
+      </div>
+      <h3 class="text-white font-bold">Menyiapkan Kamera</h3>
+      <p id="prepSubtitle" class="text-white/70 text-xs mt-1">Memuat komponen...</p>
+    </div>
+    <div class="px-4 pt-3 pb-0">
+      <div id="pstep-lib"        class="flex items-center gap-2.5 py-2.5 border-b border-slate-50">
+        <div class="step-icon w-6 h-6 shrink-0 rounded-full bg-slate-100 flex items-center justify-center"><span class="text-slate-400 text-[10px] font-semibold">1</span></div>
+        <span class="step-label text-sm text-slate-400">Pustaka AI</span>
+      </div>
+      <div id="pstep-detector"   class="flex items-center gap-2.5 py-2.5 border-b border-slate-50">
+        <div class="step-icon w-6 h-6 shrink-0 rounded-full bg-slate-100 flex items-center justify-center"><span class="text-slate-400 text-[10px] font-semibold">2</span></div>
+        <span class="step-label text-sm text-slate-400">Model Deteksi</span>
+      </div>
+      <div id="pstep-landmark"   class="flex items-center gap-2.5 py-2.5 border-b border-slate-50">
+        <div class="step-icon w-6 h-6 shrink-0 rounded-full bg-slate-100 flex items-center justify-center"><span class="text-slate-400 text-[10px] font-semibold">3</span></div>
+        <span class="step-label text-sm text-slate-400">Model Landmark</span>
+      </div>
+      <div id="pstep-recognizer" class="flex items-center gap-2.5 py-2.5 border-b border-slate-50">
+        <div class="step-icon w-6 h-6 shrink-0 rounded-full bg-slate-100 flex items-center justify-center"><span class="text-slate-400 text-[10px] font-semibold">4</span></div>
+        <span class="step-label text-sm text-slate-400">Model Pengenalan</span>
+      </div>
+      <div id="pstep-camera"     class="flex items-center gap-2.5 py-2.5">
+        <div class="step-icon w-6 h-6 shrink-0 rounded-full bg-slate-100 flex items-center justify-center"><span class="text-slate-400 text-[10px] font-semibold">5</span></div>
+        <span class="step-label text-sm text-slate-400">Akses Kamera</span>
+      </div>
+    </div>
+    <div class="px-4 pt-3 pb-2">
+      <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+        <span>Progres</span><span id="prepPct">0%</span>
+      </div>
+      <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="prepProgress" class="h-full bg-brand-600 rounded-full transition-all duration-300" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="prepError" class="mx-4 mb-2 items-start gap-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2" style="display:none">
+      <svg class="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span id="prepErrorText" class="text-red-700 text-xs leading-snug"></span>
+    </div>
+    <div class="px-4 pb-4 pt-2 text-center">
+      <button onclick="cancelPrep()" class="text-xs text-slate-400 hover:text-slate-600 transition px-4 py-1 rounded-lg hover:bg-slate-50">Batal</button>
+    </div>
+  </div>
+</div>
+
+{{-- FULLSCREEN CAMERA OVERLAY --}}
+<div id="cameraModal" class="fixed inset-0 z-[70] bg-black flex-col items-center justify-between" style="display:none">
   <div class="w-full flex items-center justify-between px-5 pt-5 pb-3">
     <button onclick="closeCamera()" class="flex items-center gap-2 text-white/80 hover:text-white text-sm transition">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -307,8 +343,8 @@
   </div>
 </div>
 
-{{-- ══════ CANDIDATE DETAIL MODAL ══════ --}}
-<div id="detailModal" class="hidden fixed inset-0 z-50">
+{{-- CANDIDATE DETAIL MODAL --}}
+<div id="detailModal" class="hidden fixed inset-0 z-[70]">
   <div class="absolute inset-0 bg-black/50" onclick="closeDetail()"></div>
   <div class="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center p-0 sm:p-4">
     <div class="bg-white w-full sm:max-w-lg mx-auto rounded-t-2xl sm:rounded-2xl overflow-hidden max-h-[92vh] flex flex-col">
@@ -335,7 +371,7 @@
           </div>
           <div class="mt-4 text-left">
             <h4 class="text-sm font-semibold text-slate-900">Misi</h4>
-            <p id="detailMisi" class="mt-1 text-sm text-slate-600 leading-relaxed">—</p>
+            <div id="detailMisi" class="mt-1 text-sm text-slate-600 leading-relaxed prose prose-sm max-w-none">—</div>
           </div>
           <div class="mt-5 flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-800 text-left">
             <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -353,8 +389,8 @@
   </div>
 </div>
 
-{{-- ══════ CONFIRM MODAL ══════ --}}
-<div id="confirmModal" class="hidden fixed inset-0 z-[60]">
+{{-- CONFIRM MODAL --}}
+<div id="confirmModal" class="hidden fixed inset-0 z-[80]">
   <div class="absolute inset-0 bg-black/60"></div>
   <div class="absolute inset-0 flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
@@ -383,52 +419,67 @@
   </div>
 </div>
 
+@endpush
+
 {{-- ══════ SCRIPTS ══════ --}}
+@push('scripts')
+
+{{-- Timer --}}
 @if($electionSchedule && $electionSchedule->status === 'berlangsung' && $electionSchedule->end_date)
 <script>
-const timerTarget = new Date("{{ $electionSchedule->end_date->toIso8601String() }}");
-function tickTimer() {
-  const diff = timerTarget - Date.now();
-  const el = document.getElementById('timer');
-  if (!el) return;
-  if (diff <= 0) { el.textContent = '00:00:00'; return; }
-  const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-  const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-  const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-  el.textContent = h + ':' + m + ':' + s;
-}
-tickTimer();
-setInterval(tickTimer, 1000);
+(function() {
+  const timerTarget = new Date("{{ $electionSchedule->end_date->toIso8601String() }}");
+  function tickTimer() {
+    const diff = timerTarget - Date.now();
+    const el   = document.getElementById('timer');
+    const unit = document.getElementById('timerUnit');
+    if (!el) return;
+    if (diff <= 0) { el.textContent = '00:00:00'; if (unit) unit.classList.add('hidden'); return; }
+    const totalSecs = Math.floor(diff / 1000);
+    const days = Math.floor(totalSecs / 86400);
+    const h    = String(Math.floor((totalSecs % 86400) / 3600)).padStart(2, '0');
+    const m    = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+    const s    = String(totalSecs % 60).padStart(2, '0');
+    if (days > 0) {
+      el.textContent = days + ' hari';
+      if (unit) { unit.textContent = h + ':' + m + ':' + s; unit.classList.remove('hidden'); }
+    } else {
+      el.textContent = h + ':' + m + ':' + s;
+      if (unit) unit.classList.add('hidden');
+    }
+    setTimeout(tickTimer, 1000);
+  }
+  tickTimer();
+})();
 </script>
 @endif
 
+{{-- Face API + Voting JS (hanya saat form voting aktif) --}}
 @if($electionStatus === 'berlangsung' && !$alreadyVoted && !$notInDpt)
+<script src="{{ asset('face-api/face-api.js') }}"></script>
 @php
 $candidatesJs = $candidates->mapWithKeys(fn($c) => [
     $c->id => [
-        'id'         => $c->id,
-        'name'       => $c->name,
-        'nim'        => $c->alumni?->nim ?? '',
-        'no'         => str_pad($c->number, 2, '0', STR_PAD_LEFT),
-        'faculty'    => $c->faculty ?? '',
-        'visi'       => $c->vision ?? 'Belum tersedia',
-        'misi'       => $c->mission ?? 'Belum tersedia',
-        'photo'      => $c->photo ? asset('storage/' . $c->photo) : '',
-        'initials'   => strtoupper(substr($c->name, 0, 2)),
-        'profileUrl' => url('/kandidat/' . $c->id),
+        'id'       => $c->id,
+        'name'     => $c->name,
+        'nim'      => $c->alumni?->nim ?? '',
+        'no'       => str_pad($c->number, 2, '0', STR_PAD_LEFT),
+        'faculty'  => $c->faculty ?? '',
+        'visi'     => $c->vision ?? 'Belum tersedia',
+        'misi'     => $c->mission ?? 'Belum tersedia',
+        'photo'    => $c->photo ? asset('storage/' . $c->photo) : '',
+        'initials' => strtoupper(substr($c->name, 0, 2)),
     ]
 ])->all();
 @endphp
 <script>
 const CANDIDATES = {!! json_encode($candidatesJs, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
-
 const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
 const VERIFY_URL = "{{ route('voting.verify-face') }}";
 const MODEL_URL  = "{{ asset('face-api/model') }}";
 
 let selectedId = null;
 
-// ── Face verification ─────────────────────────────────────────────────────────
 const camVideo   = document.getElementById('camVideo');
 const faceCanvas = document.getElementById('faceCanvas');
 const modal      = document.getElementById('cameraModal');
@@ -441,67 +492,143 @@ let faceDetected      = false;
 let consecutiveFrames = 0;
 let countingDown      = false;
 let pendingDescriptor = null;
-
 const REQUIRED_FRAMES = 3;
 
-async function openCamera() {
-  faceDetected = false; consecutiveFrames = 0;
-  countingDown = false; pendingDescriptor = null;
-  clearInterval(detectionInterval); clearInterval(countdownTimer);
+// ── PREP MODAL ────────────────────────────────────────────────────────────────
+const PREP_IDS  = ['pstep-lib','pstep-detector','pstep-landmark','pstep-recognizer','pstep-camera'];
+const PREP_LBLS = ['Pustaka AI','Model Deteksi','Model Landmark','Model Pengenalan','Akses Kamera'];
+const SPIN  = `<svg class="w-3.5 h-3.5 text-brand-600 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>`;
+const CHECK = `<svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+const CROSS = `<svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`;
 
-  modal.style.display = 'flex';
+let prepCancelled = false;
+
+function setPrepStep(id, state, label) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const icon = el.querySelector('.step-icon');
+  const text = el.querySelector('.step-label');
+  const num  = PREP_IDS.indexOf(id) + 1;
+  if (state === 'loading') {
+    icon.className = 'step-icon w-6 h-6 shrink-0 rounded-full bg-brand-100 flex items-center justify-center';
+    icon.innerHTML = SPIN;
+    text.className = 'step-label text-sm text-brand-700 font-medium';
+  } else if (state === 'done') {
+    icon.className = 'step-icon w-6 h-6 shrink-0 rounded-full bg-green-100 flex items-center justify-center';
+    icon.innerHTML = CHECK;
+    text.className = 'step-label text-sm text-slate-600';
+  } else if (state === 'error') {
+    icon.className = 'step-icon w-6 h-6 shrink-0 rounded-full bg-red-100 flex items-center justify-center';
+    icon.innerHTML = CROSS;
+    text.className = 'step-label text-sm text-red-600 font-medium';
+  } else {
+    icon.className = 'step-icon w-6 h-6 shrink-0 rounded-full bg-slate-100 flex items-center justify-center';
+    icon.innerHTML = `<span class="text-slate-400 text-[10px] font-semibold">${num}</span>`;
+    text.className = 'step-label text-sm text-slate-400';
+  }
+  if (label) text.textContent = label;
+}
+function setPrepProgress(pct) {
+  const bar = document.getElementById('prepProgress');
+  const lbl = document.getElementById('prepPct');
+  if (bar) bar.style.width = pct + '%';
+  if (lbl) lbl.textContent = Math.round(pct) + '%';
+}
+function setPrepSubtitle(t) { const el = document.getElementById('prepSubtitle'); if (el) el.textContent = t; }
+function showPrepError(msg) {
+  document.getElementById('prepErrorText').textContent = msg;
+  document.getElementById('prepError').style.display = 'flex';
+  setPrepSubtitle('Terjadi kesalahan');
+}
+function cancelPrep() {
+  prepCancelled = true;
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  document.getElementById('prepModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+async function prepareAndOpenCamera() {
+  prepCancelled = false;
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+
+  PREP_IDS.forEach((id, i) => { setPrepStep(id, 'pending'); document.getElementById(id).querySelector('.step-label').textContent = PREP_LBLS[i]; });
+  setPrepProgress(0);
+  setPrepSubtitle('Memuat komponen...');
+  document.getElementById('prepError').style.display = 'none';
+  document.getElementById('prepModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
-  document.getElementById('camLoading').style.display = 'flex';
-  document.getElementById('camLoadingText').textContent = 'Membuka kamera...';
-  document.getElementById('modelProgress').style.width = '0%';
-  setOvalColor('white');
-  setOvalText('Posisikan wajah di dalam oval');
-  document.getElementById('countdownRing').style.display = 'none';
-  document.getElementById('btnCapture').disabled = true;
-  document.getElementById('qualityRow').style.display = 'none';
 
+  // 1. Library
+  setPrepStep('pstep-lib', 'loading', 'Memeriksa pustaka AI...');
+  await delay(250);
+  if (typeof faceapi === 'undefined') {
+    setPrepStep('pstep-lib', 'error', 'Tidak tersedia');
+    showPrepError('Pustaka face-api.js tidak ditemukan. Muat ulang halaman.');
+    return;
+  }
+  setPrepStep('pstep-lib', 'done', 'Pustaka AI siap');
+  setPrepProgress(10);
+  if (prepCancelled) return;
+
+  // 2-4. Models
+  if (!modelsReady) {
+    const modelSteps = [
+      { id:'pstep-detector',   load: () => faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),     pct:35, done:'Model deteksi siap',   sub:'Mengunduh model deteksi...' },
+      { id:'pstep-landmark',   load: () => faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL), pct:60, done:'Model landmark siap',   sub:'Mengunduh model landmark...' },
+      { id:'pstep-recognizer', load: () => faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),    pct:80, done:'Model pengenalan siap', sub:'Mengunduh model pengenalan...' },
+    ];
+    for (const s of modelSteps) {
+      setPrepStep(s.id, 'loading'); setPrepSubtitle(s.sub);
+      try { await s.load(); setPrepStep(s.id, 'done', s.done); setPrepProgress(s.pct); }
+      catch(e) { setPrepStep(s.id, 'error', 'Gagal memuat'); showPrepError('Gagal: ' + e.message); return; }
+      if (prepCancelled) return;
+    }
+    modelsReady = true;
+  } else {
+    const dones = ['Model deteksi siap','Model landmark siap','Model pengenalan siap'];
+    ['pstep-detector','pstep-landmark','pstep-recognizer'].forEach((id, i) => setPrepStep(id, 'done', dones[i]));
+    setPrepProgress(80); await delay(150);
+  }
+  if (prepCancelled) return;
+
+  // 5. Camera
+  setPrepStep('pstep-camera', 'loading', 'Meminta izin kamera...');
+  setPrepSubtitle('Membuka kamera...');
   try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
-    });
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width:{ideal:640}, height:{ideal:480}, facingMode:'user' } });
     camVideo.srcObject = cameraStream;
     await new Promise(r => { camVideo.onloadedmetadata = r; });
     faceCanvas.width  = camVideo.videoWidth;
     faceCanvas.height = camVideo.videoHeight;
-  } catch (err) {
-    const msgs = {
-      NotAllowedError: 'Izin kamera ditolak.',
-      NotFoundError: 'Tidak ada kamera terdeteksi.',
-      NotReadableError: 'Kamera dipakai aplikasi lain.'
-    };
-    document.getElementById('camLoadingText').textContent = msgs[err.name] || err.message;
-    return;
+    setPrepStep('pstep-camera', 'done', 'Kamera siap');
+    setPrepProgress(100);
+    setPrepSubtitle('Semua siap! Membuka kamera...');
+  } catch(e) {
+    const msgs = { NotAllowedError:'Izin ditolak — aktifkan izin kamera di browser.', NotFoundError:'Tidak ada kamera terdeteksi.', NotReadableError:'Kamera dipakai aplikasi lain.' };
+    setPrepStep('pstep-camera', 'error', 'Gagal membuka');
+    showPrepError(msgs[e.name] || e.message); return;
   }
+  if (prepCancelled) return;
 
-  if (!modelsReady) {
-    setCamStatus('Memuat AI...', 'loading');
-    try {
-      document.getElementById('camLoadingText').textContent = 'Memuat model deteksi...';
-      document.getElementById('modelProgress').style.width = '15%';
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  await delay(600);
+  if (prepCancelled) return;
 
-      document.getElementById('camLoadingText').textContent = 'Memuat model landmark...';
-      document.getElementById('modelProgress').style.width = '50%';
-      await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
+  document.getElementById('prepModal').style.display = 'none';
+  openCamera();
+}
 
-      document.getElementById('camLoadingText').textContent = 'Memuat model pengenalan...';
-      document.getElementById('modelProgress').style.width = '75%';
-      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-
-      document.getElementById('modelProgress').style.width = '100%';
-      modelsReady = true;
-    } catch (err) {
-      document.getElementById('camLoadingText').textContent = 'Gagal memuat model: ' + err.message;
-      return;
-    }
-  }
-
+// ── Tampilkan kamera (model + stream sudah siap dari prep) ────────────────────
+function openCamera() {
+  faceDetected = false; consecutiveFrames = 0;
+  countingDown = false; pendingDescriptor = null;
+  clearInterval(detectionInterval); clearInterval(countdownTimer);
+  setOvalColor('white'); setOvalText('Posisikan wajah di dalam oval');
   document.getElementById('camLoading').style.display = 'none';
+  document.getElementById('countdownRing').style.display = 'none';
+  document.getElementById('btnCapture').disabled = true;
+  document.getElementById('qualityRow').style.display = 'none';
+  modal.style.display = 'flex';
   setCamStatus('Arahkan wajah ke oval', 'idle');
   startDetection();
 }
@@ -513,18 +640,12 @@ function closeCamera() {
   document.body.style.overflow = '';
 }
 
-function startDetection() {
-  detectionInterval = setInterval(detectFace, 120);
-}
+function startDetection() { detectionInterval = setInterval(detectFace, 120); }
 
 async function detectFace() {
   if (!camVideo.videoWidth || !modelsReady) return;
-  const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.45 });
-  const result = await faceapi
-    .detectSingleFace(camVideo, opts)
-    .withFaceLandmarks(true)
-    .withFaceDescriptor();
-
+  const opts   = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.45 });
+  const result = await faceapi.detectSingleFace(camVideo, opts).withFaceLandmarks(true).withFaceDescriptor();
   if (result) {
     const score = result.detection.score;
     updateQuality(score);
@@ -532,19 +653,14 @@ async function detectFace() {
     const { x, y, width, height } = result.detection.box;
     const cx = (x + width / 2) / camVideo.videoWidth;
     const cy = (y + height / 2) / camVideo.videoHeight;
-
     if (cx < 0.2 || cx > 0.8 || cy < 0.15 || cy > 0.8) {
       if (faceDetected) resetFaceState();
-      setCamStatus('Geser agar wajah di tengah', 'idle');
-      return;
+      setCamStatus('Geser agar wajah di tengah', 'idle'); return;
     }
-
     pendingDescriptor = Array.from(result.descriptor);
-
     if (consecutiveFrames >= REQUIRED_FRAMES && score > 0.65 && !faceDetected) {
       faceDetected = true;
-      setOvalColor('#22c55e');
-      setOvalText('Tahan diam...');
+      setOvalColor('#22c55e'); setOvalText('Tahan diam...');
       setCamStatus('Wajah terdeteksi ✓', 'ok');
       document.getElementById('btnCapture').disabled = false;
       startCountdown();
@@ -581,20 +697,12 @@ function startCountdown() {
 async function doCapture() {
   clearInterval(detectionInterval);
   setCamStatus('Memproses...', 'loading');
-  if (!pendingDescriptor) {
-    setCamStatus('Gagal. Coba lagi.', 'error');
-    resetFaceState(); startDetection(); return;
-  }
+  if (!pendingDescriptor) { setCamStatus('Gagal. Coba lagi.', 'error'); resetFaceState(); startDetection(); return; }
   const desc = pendingDescriptor;
   closeCamera();
   setFaceUI('verifying');
-
   try {
-    const res = await fetch(VERIFY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-      body: JSON.stringify({ descriptor: desc })
-    });
+    const res  = await fetch(VERIFY_URL, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF}, body:JSON.stringify({descriptor:desc}) });
     const data = await res.json();
     if (res.ok && data.ok) {
       setFaceUI('verified');
@@ -602,12 +710,8 @@ async function doCapture() {
         document.getElementById('step-face').classList.add('hidden');
         document.getElementById('step-vote').classList.remove('hidden');
       }, 1200);
-    } else {
-      setFaceUI('failed', data.message || 'Wajah tidak cocok. Silakan coba lagi.');
-    }
-  } catch (err) {
-    setFaceUI('failed', 'Koneksi error: ' + err.message);
-  }
+    } else { setFaceUI('failed', data.message || 'Wajah tidak cocok. Silakan coba lagi.'); }
+  } catch(err) { setFaceUI('failed', 'Koneksi error: ' + err.message); }
 }
 
 document.getElementById('btnCapture').addEventListener('click', async () => {
@@ -623,92 +727,66 @@ function setFaceUI(state, msg) {
   const status = document.getElementById('faceStatus');
   const msgEl  = document.getElementById('faceMsg');
   const btn    = document.getElementById('btnFaceStart');
-
   if (state === 'verifying') {
     icon.className = 'w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center';
     icon.innerHTML = '<div class="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>';
     status.innerHTML = '<p class="font-semibold text-slate-900">Memverifikasi...</p><p class="text-sm text-slate-500 mt-1">Sedang mencocokkan wajah Anda</p>';
-    btn.classList.add('hidden');
-    msgEl.classList.add('hidden');
+    btn.classList.add('hidden'); msgEl.classList.add('hidden');
   } else if (state === 'verified') {
     icon.className = 'w-24 h-24 rounded-full bg-green-100 flex items-center justify-center';
     icon.innerHTML = '<svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
     status.innerHTML = '<p class="font-semibold text-green-700">Verifikasi Berhasil!</p><p class="text-sm text-slate-500 mt-1">Menampilkan daftar kandidat...</p>';
-    btn.classList.add('hidden');
-    msgEl.classList.add('hidden');
+    btn.classList.add('hidden'); msgEl.classList.add('hidden');
   } else if (state === 'failed') {
     icon.className = 'w-24 h-24 rounded-full bg-red-100 flex items-center justify-center';
     icon.innerHTML = '<svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
     status.innerHTML = '<p class="font-semibold text-red-700">Verifikasi Gagal</p><p class="text-sm text-slate-500 mt-1">Wajah tidak cocok. Silakan coba lagi.</p>';
-    btn.textContent = 'Coba Lagi';
-    btn.classList.remove('hidden');
+    btn.textContent = 'Coba Lagi'; btn.classList.remove('hidden');
     msgEl.className = 'w-full rounded-xl border p-3 text-sm text-center bg-red-50 border-red-200 text-red-700';
-    msgEl.textContent = msg || 'Verifikasi gagal.';
-    msgEl.classList.remove('hidden');
+    msgEl.textContent = msg || 'Verifikasi gagal.'; msgEl.classList.remove('hidden');
   }
 }
 
-// ── Candidate detail modal ────────────────────────────────────────────────────
+// ── Candidate modals ──────────────────────────────────────────────────────────
 function openDetail(id) {
   const c = CANDIDATES[id];
   if (!c) return;
   selectedId = id;
-
   const photo = document.getElementById('detailPhoto');
-  if (c.photo) {
-    photo.src = c.photo;
-    photo.classList.remove('hidden');
-  } else {
-    photo.classList.add('hidden');
-  }
+  if (c.photo) { photo.src = c.photo; photo.classList.remove('hidden'); }
+  else { photo.classList.add('hidden'); }
   photo.alt = c.name;
-
-  document.getElementById('detailNo').textContent = 'No. ' + c.no;
-  document.getElementById('detailName').textContent = c.name;
+  document.getElementById('detailNo').textContent      = 'No. ' + c.no;
+  document.getElementById('detailName').textContent    = c.name;
   document.getElementById('detailFaculty').textContent = (c.nim ? c.nim + ' · ' : '') + c.faculty;
-  document.getElementById('detailVisi').textContent = c.visi;
-  document.getElementById('detailMisi').textContent = c.misi;
+  document.getElementById('detailVisi').textContent    = c.visi;
+  document.getElementById('detailMisi').innerHTML      = c.misi;
   document.getElementById('detailModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
-
-function closeDetail() {
-  document.getElementById('detailModal').classList.add('hidden');
-  document.body.style.overflow = '';
-}
+function closeDetail() { document.getElementById('detailModal').classList.add('hidden'); document.body.style.overflow = ''; }
 
 function confirmVote() {
   if (!selectedId) return;
   const c = CANDIDATES[selectedId];
   closeDetail();
-
   const photoEl    = document.getElementById('confirmPhoto');
   const initialsEl = document.getElementById('confirmInitials');
-  if (c.photo) {
-    photoEl.src = c.photo;
-    photoEl.classList.remove('hidden');
-    initialsEl.textContent = '';
-  } else {
-    photoEl.classList.add('hidden');
-    initialsEl.textContent = c.initials;
-  }
-
+  if (c.photo) { photoEl.src = c.photo; photoEl.classList.remove('hidden'); initialsEl.textContent = ''; }
+  else { photoEl.classList.add('hidden'); initialsEl.textContent = c.initials; }
   document.getElementById('confirmNo').textContent   = 'No. ' + c.no;
   document.getElementById('confirmName').textContent = c.name;
   document.getElementById('castCandidateId').value   = selectedId;
   document.getElementById('confirmModal').classList.remove('hidden');
 }
-
-function closeConfirm() {
-  document.getElementById('confirmModal').classList.add('hidden');
-}
+function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
 function setCamStatus(text, type) {
   const dot  = document.getElementById('camDot');
   const span = document.getElementById('camStatusText');
   span.textContent = text;
-  const colors = { loading: 'bg-blue-400', ok: 'bg-green-400', error: 'bg-red-400', idle: 'bg-white/50' };
+  const colors = { loading:'bg-blue-400', ok:'bg-green-400', error:'bg-red-400', idle:'bg-white/50' };
   dot.className = `w-2 h-2 rounded-full inline-block ${colors[type] || colors.idle} ${type === 'loading' ? 'animate-pulse' : ''}`;
 }
 function setOvalColor(c) { const el = document.getElementById('ovalBorder'); if (el) el.setAttribute('stroke', c); }
@@ -723,11 +801,9 @@ function updateQuality(score) {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeCamera(); closeDetail(); closeConfirm(); }
+  if (e.key === 'Escape') { closeCamera(); cancelPrep(); closeDetail(); closeConfirm(); }
 });
 </script>
-<script src="{{ asset('face-api/face-api.js') }}"></script>
 @endif
 
-</body>
-</html>
+@endpush

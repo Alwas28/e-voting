@@ -9,7 +9,8 @@
   $isAdmin = $u->hasRole('admin') || $u->hasRole('superadmin');
 @endphp
 
-{{-- ═══ STAT CARDS — tampil untuk semua role ═══ --}}
+{{-- ═══ STAT CARDS — admin saja ═══ --}}
+@if($isAdmin)
 <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
 
   <div class="bg-white rounded-xl border border-slate-200 p-5">
@@ -60,33 +61,133 @@
   <div class="bg-white rounded-xl border border-slate-200 p-5">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm text-slate-500">{{ $isAdmin ? 'Kandidat Aktif' : 'Partisipasi' }}</p>
-        <p class="text-2xl font-bold text-slate-800 mt-1">
-          @if($isAdmin)
-            {{ $stats['total_candidates'] }}
-          @else
-            {{ $stats['participation_pct'] }}%
-          @endif
-        </p>
+        <p class="text-sm text-slate-500">Kandidat Aktif</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">{{ $stats['total_candidates'] }}</p>
       </div>
       <div class="w-11 h-11 rounded-lg bg-brand-50 flex items-center justify-center">
-        @if($isAdmin)
-          <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-          </svg>
-        @else
-          <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-          </svg>
-        @endif
+        <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+        </svg>
       </div>
     </div>
-    <p class="text-xs text-slate-400 mt-3">
-      @if($isAdmin) Pemilihan periode ini @else Dari total pemilih terdaftar @endif
-    </p>
+    <p class="text-xs text-slate-400 mt-3">Pemilihan periode ini</p>
   </div>
 
 </div>
+@endif
+
+{{-- ═══ REKAPITULASI PARTISIPASI — admin saja ═══ --}}
+@if($isAdmin)
+<div class="space-y-4">
+
+  {{-- Per Fakultas --}}
+  <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <h2 class="font-semibold text-slate-800">Partisipasi per Fakultas</h2>
+        <p class="text-xs text-slate-400 mt-0.5">DPT aktif yang telah menggunakan hak suara</p>
+      </div>
+      <span class="text-xs font-semibold bg-brand-50 text-brand-700 px-2.5 py-1 rounded-full">
+        {{ $stats['participation_pct'] }}% keseluruhan
+      </span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-left">
+          <tr>
+            <th class="px-5 py-3 font-medium">Fakultas</th>
+            <th class="px-5 py-3 font-medium text-right">Total DPT</th>
+            <th class="px-5 py-3 font-medium text-right">Sudah Memilih</th>
+            <th class="px-5 py-3 font-medium text-right">Belum Memilih</th>
+            <th class="px-5 py-3 font-medium min-w-[180px]">Partisipasi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @forelse($byFaculty as $row)
+          <tr class="hover:bg-slate-50">
+            <td class="px-5 py-3 font-medium text-slate-700">{{ $row['name'] }}</td>
+            <td class="px-5 py-3 text-right text-slate-600">{{ number_format($row['total']) }}</td>
+            <td class="px-5 py-3 text-right text-green-600 font-medium">{{ number_format($row['voted']) }}</td>
+            <td class="px-5 py-3 text-right text-amber-600">{{ number_format($row['total'] - $row['voted']) }}</td>
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2">
+                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full {{ $row['pct'] >= 75 ? 'bg-green-500' : ($row['pct'] >= 40 ? 'bg-brand-600' : 'bg-amber-500') }}"
+                       style="width: {{ $row['pct'] }}%"></div>
+                </div>
+                <span class="text-xs font-semibold text-slate-600 w-11 text-right tabular-nums">{{ $row['pct'] }}%</span>
+              </div>
+            </td>
+          </tr>
+          @empty
+          <tr>
+            <td colspan="5" class="px-5 py-8 text-center text-slate-400 text-sm">Belum ada data DPT terdaftar.</td>
+          </tr>
+          @endforelse
+        </tbody>
+        @if(count($byFaculty))
+        <tfoot class="bg-slate-50 border-t border-slate-200">
+          <tr class="font-semibold text-slate-700">
+            <td class="px-5 py-3">Total</td>
+            <td class="px-5 py-3 text-right">{{ number_format($stats['total_voters']) }}</td>
+            <td class="px-5 py-3 text-right text-green-700">{{ number_format($stats['voted']) }}</td>
+            <td class="px-5 py-3 text-right text-amber-700">{{ number_format($stats['not_voted']) }}</td>
+            <td class="px-5 py-3 text-xs text-slate-500">{{ $stats['participation_pct'] }}% partisipasi</td>
+          </tr>
+        </tfoot>
+        @endif
+      </table>
+    </div>
+  </div>
+
+  {{-- Per Program Studi --}}
+  <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100">
+      <h2 class="font-semibold text-slate-800">Partisipasi per Program Studi</h2>
+      <p class="text-xs text-slate-400 mt-0.5">Rincian DPT berdasarkan program studi</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-left">
+          <tr>
+            <th class="px-5 py-3 font-medium">Program Studi</th>
+            <th class="px-5 py-3 font-medium">Fakultas</th>
+            <th class="px-5 py-3 font-medium text-right">Total DPT</th>
+            <th class="px-5 py-3 font-medium text-right">Sudah Memilih</th>
+            <th class="px-5 py-3 font-medium text-right">Belum Memilih</th>
+            <th class="px-5 py-3 font-medium min-w-[180px]">Partisipasi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @forelse($byDepartment as $row)
+          <tr class="hover:bg-slate-50">
+            <td class="px-5 py-3 font-medium text-slate-700">{{ $row['name'] }}</td>
+            <td class="px-5 py-3 text-slate-400 text-xs">{{ $row['faculty'] }}</td>
+            <td class="px-5 py-3 text-right text-slate-600">{{ number_format($row['total']) }}</td>
+            <td class="px-5 py-3 text-right text-green-600 font-medium">{{ number_format($row['voted']) }}</td>
+            <td class="px-5 py-3 text-right text-amber-600">{{ number_format($row['total'] - $row['voted']) }}</td>
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2">
+                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full {{ $row['pct'] >= 75 ? 'bg-green-500' : ($row['pct'] >= 40 ? 'bg-brand-600' : 'bg-amber-500') }}"
+                       style="width: {{ $row['pct'] }}%"></div>
+                </div>
+                <span class="text-xs font-semibold text-slate-600 w-11 text-right tabular-nums">{{ $row['pct'] }}%</span>
+              </div>
+            </td>
+          </tr>
+          @empty
+          <tr>
+            <td colspan="6" class="px-5 py-8 text-center text-slate-400 text-sm">Belum ada data DPT terdaftar.</td>
+          </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+@endif
 
 {{-- ═══ SECTION 2: Kolom utama + Status Pemilihan ═══ --}}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -121,51 +222,10 @@
     </div>
     @endif
   </div>
-
-  @else
-  {{-- Partisipasi Pemilih — alumni/kandidat --}}
-  <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
-    <h2 class="font-semibold text-slate-800 mb-5">Partisipasi Pemilih</h2>
-
-    {{-- Angka besar --}}
-    <div class="flex items-end gap-3 mb-1">
-      <span class="text-5xl font-black text-brand-600">{{ $stats['participation_pct'] }}%</span>
-      <span class="text-sm text-slate-400 mb-2">dari total pemilih terdaftar</span>
-    </div>
-
-    {{-- Progress bar --}}
-    <div class="mt-4 h-5 bg-slate-100 rounded-full overflow-hidden">
-      <div class="h-full rounded-full bg-brand-500 transition-all duration-700"
-           style="width: {{ $stats['participation_pct'] }}%"></div>
-    </div>
-
-    {{-- Breakdown --}}
-    <div class="grid grid-cols-2 gap-4 mt-6">
-      <div class="flex items-center gap-3 bg-green-50 rounded-xl p-4">
-        <div class="w-3 h-3 rounded-full bg-green-500 shrink-0"></div>
-        <div>
-          <p class="text-xs text-green-600 font-medium">Sudah Memilih</p>
-          <p class="text-xl font-bold text-green-700 mt-0.5">{{ number_format($stats['voted']) }}</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3 bg-amber-50 rounded-xl p-4">
-        <div class="w-3 h-3 rounded-full bg-amber-400 shrink-0"></div>
-        <div>
-          <p class="text-xs text-amber-600 font-medium">Belum Memilih</p>
-          <p class="text-xl font-bold text-amber-700 mt-0.5">{{ number_format($stats['not_voted']) }}</p>
-        </div>
-      </div>
-    </div>
-
-    {{-- Total --}}
-    <p class="text-xs text-slate-400 mt-4 text-right">
-      Total DPT terdaftar: <span class="font-semibold text-slate-600">{{ number_format($stats['total_voters']) }}</span> pemilih
-    </p>
-  </div>
   @endif
 
-  {{-- Status Pemilihan — semua role --}}
-  <div class="bg-white rounded-xl border border-slate-200 p-5">
+  {{-- Status Pemilihan — semua role; full-width jika alumni --}}
+  <div class="{{ $isAdmin ? '' : 'lg:col-span-3' }} bg-white rounded-xl border border-slate-200 p-5">
     <h2 class="font-semibold text-slate-800 mb-5">Status Pemilihan</h2>
     <div class="space-y-4 text-sm">
       <div class="flex items-center justify-between">
@@ -333,6 +393,101 @@
 
 @endsection
 
+{{-- ═══ POPUP: Reminder DPT untuk alumni yang belum terdaftar ═══ --}}
+@if(!$isAdmin && !$userVoter && isset($dptSchedule) && $dptSchedule?->status === 'berlangsung')
+<div id="dptPopup" class="fixed inset-0 z-[80] flex items-center justify-center p-4" style="display:none!important">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+
+    {{-- Top accent --}}
+    <div class="h-2 bg-gradient-to-r from-red-500 via-amber-500 to-orange-400"></div>
+
+    <div class="px-6 pt-6 pb-2 flex items-start gap-4">
+      <div class="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-bold text-slate-900 text-base leading-tight">Segera Daftar DPT!</p>
+        <p class="text-sm text-slate-500 mt-0.5">Pendaftaran pemilih masih terbuka</p>
+      </div>
+    </div>
+
+    <div class="px-6 py-4 space-y-4">
+      <p class="text-sm text-slate-600">
+        Anda <span class="font-semibold text-red-600">belum terdaftar sebagai pemilih (DPT)</span>.
+        Jika tidak mendaftar sebelum pendaftaran ditutup, Anda tidak dapat menyalurkan hak suara dalam pemilihan.
+      </p>
+
+      {{-- Deadline info --}}
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 space-y-2">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-amber-700 font-medium">Pendaftaran DPT ditutup:</span>
+          <span class="text-amber-900 font-bold">
+            {{ $dptSchedule->end_date?->translatedFormat('d M Y') ?? '—' }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-amber-600 text-xs">Sisa waktu:</span>
+          <span id="dptCountdown" class="font-mono font-bold text-red-600 text-sm tabular-nums">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-6 pb-6 flex flex-col gap-2">
+      <a href="{{ route('admin.dpt.register') }}"
+         class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+        Daftar DPT Sekarang
+      </a>
+      <button onclick="dismissDptPopup()"
+              class="w-full border border-slate-300 text-slate-500 hover:bg-slate-50 font-medium py-2.5 rounded-xl transition text-sm">
+        Nanti Saja
+      </button>
+    </div>
+
+  </div>
+</div>
+
+@push('scripts')
+<script>
+(function () {
+  const key = 'dptPopupDismissed_{{ auth()->id() }}';
+  if (!sessionStorage.getItem(key)) {
+    const popup = document.getElementById('dptPopup');
+    if (popup) popup.style.cssText = 'display:flex!important';
+  }
+
+  @if($dptSchedule?->end_date)
+  const endTime = {{ $dptSchedule->end_date->timestamp }} * 1000;
+  const el = document.getElementById('dptCountdown');
+  function tickDpt() {
+    const diff = Math.max(0, endTime - Date.now());
+    if (!diff) { if (el) el.textContent = 'Ditutup'; return; }
+    const ts = Math.floor(diff / 1000);
+    const d  = Math.floor(ts / 86400);
+    const h  = String(Math.floor((ts % 86400) / 3600)).padStart(2, '0');
+    const m  = String(Math.floor((ts % 3600) / 60)).padStart(2, '0');
+    const s  = String(ts % 60).padStart(2, '0');
+    if (el) el.textContent = d > 0 ? `${d} hari ${h}:${m}:${s}` : `${h}:${m}:${s}`;
+    setTimeout(tickDpt, 1000);
+  }
+  tickDpt();
+  @endif
+})();
+
+function dismissDptPopup() {
+  const popup = document.getElementById('dptPopup');
+  if (popup) popup.style.cssText = 'display:none!important';
+  sessionStorage.setItem('dptPopupDismissed_{{ auth()->id() }}', '1');
+}
+</script>
+@endpush
+@endif
+
 @push('scripts')
 <script>
 @if ($election['status'] === 'active' && !empty($election['end_timestamp']))
@@ -342,10 +497,12 @@
   if (!el) return;
   function tick() {
     const diff = Math.max(0, endTime - Date.now());
-    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-    el.textContent = h + ' : ' + m + ' : ' + s;
+    const ts = Math.floor(diff / 1000);
+    const d  = Math.floor(ts / 86400);
+    const h  = String(Math.floor((ts % 86400) / 3600)).padStart(2, '0');
+    const m  = String(Math.floor((ts % 3600) / 60)).padStart(2, '0');
+    const s  = String(ts % 60).padStart(2, '0');
+    el.textContent = d > 0 ? `${d} hari ${h}:${m}:${s}` : `${h}:${m}:${s}`;
     if (diff > 0) setTimeout(tick, 1000);
   }
   tick();

@@ -75,6 +75,9 @@
     <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
       <a href="#fitur"    class="hover:text-brand-600 transition">Fitur</a>
       <a href="#alur"     class="hover:text-brand-600 transition">Cara Kerja</a>
+      @if($formateurs->isNotEmpty())
+      <a href="#formatur" class="hover:text-brand-600 transition">Tim Formatur</a>
+      @endif
       @if($youtubeEmbed)
       <a href="#video"    class="hover:text-brand-600 transition">Video</a>
       @endif
@@ -98,6 +101,9 @@
   <div id="mobileNav" class="hidden md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
     <a href="#fitur"    onclick="toggleMobileNav()" class="block px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-50">Fitur</a>
     <a href="#alur"     onclick="toggleMobileNav()" class="block px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-50">Cara Kerja</a>
+    @if($formateurs->isNotEmpty())
+    <a href="#formatur" onclick="toggleMobileNav()" class="block px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-50">Tim Formatur</a>
+    @endif
     @if($youtubeEmbed)
     <a href="#video"    onclick="toggleMobileNav()" class="block px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-50">Video</a>
     @endif
@@ -239,10 +245,15 @@
             const t = new Date("{{ $dptSchedule->end_date->toIso8601String() }}");
             function tick(){
               const diff = t - new Date();
-              if(diff <= 0){ document.getElementById('dpt-cd').innerHTML='<span class="text-slate-500 text-sm font-semibold">Ditutup</span>'; return; }
-              document.getElementById('dpt-h').textContent = String(Math.floor(diff/3600000)).padStart(2,'0');
-              document.getElementById('dpt-m').textContent = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
-              document.getElementById('dpt-s').textContent = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+              const cd = document.getElementById('dpt-cd');
+              if(diff <= 0){ cd.innerHTML='<span class="text-slate-500 text-sm font-semibold">Ditutup</span>'; return; }
+              const ts = Math.floor(diff/1000), d = Math.floor(ts/86400);
+              const h  = String(Math.floor((ts%86400)/3600)).padStart(2,'0');
+              const m  = String(Math.floor((ts%3600)/60)).padStart(2,'0');
+              const s  = String(ts%60).padStart(2,'0');
+              const lc = 'text-blue-400 text-sm font-normal';
+              cd.innerHTML = (d > 0 ? `<span>${d}</span><span class="${lc}">h</span>` : '')
+                + `<span>${h}</span><span class="${lc}">j</span><span>${m}</span><span class="${lc}">m</span><span>${s}</span><span class="${lc}">d</span>`;
             }
             tick(); setInterval(tick,1000);
           })();
@@ -263,11 +274,15 @@
             const t = new Date("{{ $dptSchedule->start_date->toIso8601String() }}");
             function tick(){
               const diff = t - new Date();
-              if(diff <= 0){ document.getElementById('dpt-cd').innerHTML='<span class="text-green-600 font-semibold">Segera dibuka!</span>'; return; }
-              document.getElementById('dpt-h').textContent = String(Math.floor(diff/86400000)).padStart(2,'0');
-              document.getElementById('dpt-d').textContent = String(Math.floor((diff%86400000)/3600000)).padStart(2,'0');
-              document.getElementById('dpt-m').textContent = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
-              document.getElementById('dpt-s').textContent = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+              const cd = document.getElementById('dpt-cd');
+              if(diff <= 0){ cd.innerHTML='<span class="text-green-600 font-semibold">Segera dibuka!</span>'; return; }
+              const ts = Math.floor(diff/1000), d = Math.floor(ts/86400);
+              const h  = String(Math.floor((ts%86400)/3600)).padStart(2,'0');
+              const m  = String(Math.floor((ts%3600)/60)).padStart(2,'0');
+              const s  = String(ts%60).padStart(2,'0');
+              const lc = 'text-amber-400 text-sm font-normal';
+              cd.innerHTML = (d > 0 ? `<span>${d}</span><span class="${lc}">h</span>` : '')
+                + `<span>${h}</span><span class="${lc}">j</span><span>${m}</span><span class="${lc}">m</span><span>${s}</span><span class="${lc}">d</span>`;
             }
             tick(); setInterval(tick,1000);
           })();
@@ -322,10 +337,15 @@
             const t = new Date("{{ $electionSchedule->end_date->toIso8601String() }}");
             function tick(){
               const diff = t - new Date();
-              if(diff <= 0){ document.getElementById('elec-cd').innerHTML='<span class="text-slate-500 text-sm font-semibold">Selesai</span>'; return; }
-              document.getElementById('elec-h').textContent = String(Math.floor(diff/3600000)).padStart(2,'0');
-              document.getElementById('elec-m').textContent = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
-              document.getElementById('elec-s').textContent = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+              const cd = document.getElementById('elec-cd');
+              if(diff <= 0){ cd.innerHTML='<span class="text-slate-500 text-sm font-semibold">Selesai</span>'; return; }
+              const ts = Math.floor(diff/1000), d = Math.floor(ts/86400);
+              const h  = String(Math.floor((ts%86400)/3600)).padStart(2,'0');
+              const m  = String(Math.floor((ts%3600)/60)).padStart(2,'0');
+              const s  = String(ts%60).padStart(2,'0');
+              const lc = 'text-green-400 text-sm font-normal';
+              cd.innerHTML = (d > 0 ? `<span>${d}</span><span class="${lc}">h</span>` : '')
+                + `<span>${h}</span><span class="${lc}">j</span><span>${m}</span><span class="${lc}">m</span><span>${s}</span><span class="${lc}">d</span>`;
             }
             tick(); setInterval(tick,1000);
           })();
@@ -345,11 +365,15 @@
             const t = new Date("{{ $electionSchedule->start_date->toIso8601String() }}");
             function tick(){
               const diff = t - new Date();
-              if(diff <= 0){ document.getElementById('elec-cd').innerHTML='<span class="text-green-600 font-semibold">Segera dimulai!</span>'; return; }
-              document.getElementById('elec-hari').textContent = String(Math.floor(diff/86400000)).padStart(2,'0');
-              document.getElementById('elec-h').textContent   = String(Math.floor((diff%86400000)/3600000)).padStart(2,'0');
-              document.getElementById('elec-m').textContent   = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
-              document.getElementById('elec-s').textContent   = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+              const cd = document.getElementById('elec-cd');
+              if(diff <= 0){ cd.innerHTML='<span class="text-green-600 font-semibold">Segera dimulai!</span>'; return; }
+              const ts = Math.floor(diff/1000), d = Math.floor(ts/86400);
+              const h  = String(Math.floor((ts%86400)/3600)).padStart(2,'0');
+              const m  = String(Math.floor((ts%3600)/60)).padStart(2,'0');
+              const s  = String(ts%60).padStart(2,'0');
+              const lc = 'text-brand-400 text-sm font-normal';
+              cd.innerHTML = (d > 0 ? `<span>${d}</span><span class="${lc}">h</span>` : '')
+                + `<span>${h}</span><span class="${lc}">j</span><span>${m}</span><span class="${lc}">m</span><span>${s}</span><span class="${lc}">d</span>`;
             }
             tick(); setInterval(tick,1000);
           })();
@@ -454,9 +478,9 @@
         </svg>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="font-semibold text-slate-800 group-hover:text-brand-600 transition truncate">{{ $doc->title }}</p>
+        <p class="font-semibold text-slate-800 group-hover:text-brand-600 transition leading-snug">{{ $doc->title }}</p>
         @if($doc->description)
-          <p class="text-xs text-slate-400 mt-0.5 truncate">{{ $doc->description }}</p>
+          <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">{{ $doc->description }}</p>
         @endif
         <span class="inline-block mt-1 text-xs font-bold {{ $icon['text'] }}">{{ $icon['label'] }}{{ $doc->file_size ? ' · ' . $doc->file_size : '' }}</span>
       </div>
@@ -516,6 +540,61 @@
 </section>
 @endif
 
+<!-- ═══ TIM FORMATUR ═══ -->
+@if($formateurs->isNotEmpty())
+<section id="formatur" class="bg-slate-50 border-t border-slate-200">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <span class="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-xs font-bold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wide">Tim Formatur</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900">Panitia Penyelenggara Pemilihan</h2>
+      <p class="mt-4 text-lg text-slate-500 leading-relaxed">Orang-orang di balik terselenggaranya pemilihan ini.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      @foreach($formateurs as $fm)
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-200 transition group">
+
+        {{-- Foto --}}
+        <div class="w-full aspect-square bg-brand-50 overflow-hidden">
+          @if($fm->photo_url)
+            <img src="{{ $fm->photo_url }}" alt="{{ $fm->alumni->name ?? '' }}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+          @else
+            <div class="w-full h-full flex items-center justify-center">
+              <span class="text-brand-600 font-extrabold text-6xl leading-none">
+                {{ strtoupper(substr($fm->alumni->name ?? 'F', 0, 1)) }}
+              </span>
+            </div>
+          @endif
+        </div>
+
+        {{-- Info --}}
+        <div class="p-5">
+          <span class="inline-block text-xs font-bold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg mb-2">
+            {{ $fm->jabatan }}
+          </span>
+          <p class="font-bold text-slate-900 leading-snug">{{ $fm->alumni->name ?? '—' }}</p>
+          @if($fm->alumni?->department || $fm->alumni?->faculty)
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            {{ $fm->alumni->department ?? '' }}
+            @if($fm->alumni?->department && $fm->alumni?->faculty) · @endif
+            {{ $fm->alumni->faculty ?? '' }}
+          </p>
+          @endif
+          @if($fm->deskripsi)
+          <p class="text-xs text-slate-500 mt-3 leading-relaxed line-clamp-4">{{ $fm->deskripsi }}</p>
+          @endif
+        </div>
+
+      </div>
+      @endforeach
+    </div>
+
+  </div>
+</section>
+@endif
+
 <!-- FAQ -->
 <section id="faq" class="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
   <div class="text-center">
@@ -569,6 +648,9 @@
       <ul class="space-y-2 text-sm">
         <li><a href="#fitur"    class="hover:text-white transition">Fitur</a></li>
         <li><a href="#alur"    class="hover:text-white transition">Cara Kerja</a></li>
+        @if($formateurs->isNotEmpty())
+        <li><a href="#formatur" class="hover:text-white transition">Tim Formatur</a></li>
+        @endif
         @if($youtubeEmbed)
         <li><a href="#video"   class="hover:text-white transition">Video Panduan</a></li>
         @endif

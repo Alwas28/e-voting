@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AlumniController;
 use App\Http\Controllers\Admin\DptController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CandidateController;
+use App\Http\Controllers\Admin\FormateurController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Auth\AlumniRegisterController;
@@ -42,9 +43,15 @@ Route::get('/', function () {
     }
     $youtubeTitle = \App\Models\Setting::get('youtube_title', 'Panduan Video');
 
+    $formateurs = \App\Models\Formateur::with('alumni')
+        ->where('is_active', true)
+        ->orderBy('sort_order')
+        ->orderBy('id')
+        ->get();
+
     return view('welcome', compact(
         'candidates', 'activePeriod', 'dptSchedule', 'electionSchedule',
-        'documents', 'youtubeEmbed', 'youtubeTitle'
+        'documents', 'youtubeEmbed', 'youtubeTitle', 'formateurs'
     ));
 });
 
@@ -68,6 +75,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/alumni/{alumnus}',          [AlumniController::class, 'update'])->middleware('permission:users.edit')->name('alumni.update');
     Route::delete('/alumni/{alumnus}',       [AlumniController::class, 'destroy'])->middleware('permission:users.delete')->name('alumni.destroy');
     Route::patch('/alumni/{alumnus}/toggle', [AlumniController::class, 'toggleStatus'])->middleware('permission:users.edit')->name('alumni.toggle');
+    Route::post('/alumni/import',            [AlumniController::class, 'import'])->middleware('permission:users.create')->name('alumni.import');
+    Route::get('/alumni/template',           [AlumniController::class, 'downloadTemplate'])->middleware('permission:users.view')->name('alumni.template');
 
     // Data Pemilih — butuh permission voters.view / voters.create / dst.
     Route::get('/voters',              [AdminController::class, 'voters'])->middleware('permission:voters.view')->name('voters');
@@ -106,6 +115,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::put('/schedule/schedules/{schedule}',          [ScheduleController::class, 'updateSchedule'])->name('schedule.update');
     });
 
+    // Tim Formatur
+    Route::get('/formateurs',                         [FormateurController::class, 'index'])->middleware('permission:settings.view')->name('formateurs.index');
+    Route::post('/formateurs',                        [FormateurController::class, 'store'])->middleware('permission:settings.manage')->name('formateurs.store');
+    Route::put('/formateurs/{formateur}',             [FormateurController::class, 'update'])->middleware('permission:settings.manage')->name('formateurs.update');
+    Route::delete('/formateurs/{formateur}',          [FormateurController::class, 'destroy'])->middleware('permission:settings.manage')->name('formateurs.destroy');
+    Route::patch('/formateurs/{formateur}/toggle',    [FormateurController::class, 'toggleStatus'])->middleware('permission:settings.manage')->name('formateurs.toggle');
+
     // Pengaturan
     Route::get('/settings',  [AdminController::class, 'settings'])->middleware('permission:settings.view')->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->middleware('permission:settings.manage')->name('settings.update');
@@ -131,10 +147,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile',          [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile',        [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile',       [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/profile/password', [ProfileController::class, 'password'])->name('profile.password');
+    Route::get('/profile',               [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile',             [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile',            [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile/password',      [ProfileController::class, 'password'])->name('profile.password');
+    Route::patch('/profile/alumni-data', [ProfileController::class, 'updateAlumniData'])->name('profile.alumni-data');
 });
 
 // Kandidat — hanya role kandidat

@@ -18,6 +18,16 @@
       {{ session('error') }}
     </div>
   @endif
+  @if (session('import_errors'))
+    <div class="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl space-y-1">
+      <p class="font-medium">Detail baris yang dilewati:</p>
+      <ul class="list-disc list-inside space-y-0.5">
+        @foreach (session('import_errors') as $err)
+          <li class="text-xs">{{ $err }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
 
   {{-- Stat cards --}}
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -44,13 +54,25 @@
 
     {{-- Toolbar --}}
     <div class="px-5 py-4 border-b border-slate-100 flex flex-col gap-3">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between flex-wrap gap-2">
         <h2 class="font-semibold text-slate-800">Daftar Alumni</h2>
-        <button onclick="openModal('modalCreate')"
-                class="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          Tambah Alumni
-        </button>
+        <div class="flex items-center gap-2">
+          <a href="{{ route('admin.alumni.template') }}"
+             class="flex items-center gap-1.5 border border-slate-300 text-slate-600 hover:bg-slate-50 text-sm font-medium px-3 py-2 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Template
+          </a>
+          <button onclick="openModal('modalImport')"
+                  class="flex items-center gap-1.5 border border-green-600 text-green-700 hover:bg-green-50 text-sm font-medium px-3 py-2 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Import Excel
+          </button>
+          <button onclick="openModal('modalCreate')"
+                  class="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            Tambah Alumni
+          </button>
+        </div>
       </div>
 
       {{-- Filter form --}}
@@ -317,6 +339,14 @@
           </div>
         </div>
 
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">IPK</label>
+          <input type="number" name="ipk" value="{{ old('ipk') }}"
+                 min="0" max="4" step="0.01" placeholder="Contoh: 3.75"
+                 class="w-full border {{ $errors->has('ipk') ? 'border-red-400 bg-red-50' : 'border-slate-300' }} rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+          <p class="text-xs text-slate-400 mt-1">Gunakan titik (.) sebagai pemisah desimal. Contoh: <span class="font-mono">3.75</span></p>
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
@@ -405,6 +435,14 @@
           </div>
         </div>
 
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">IPK</label>
+          <input type="number" name="ipk" id="editIpk"
+                 min="0" max="4" step="0.01" placeholder="Contoh: 3.75"
+                 class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+          <p class="text-xs text-slate-400 mt-1">Gunakan titik (.) sebagai pemisah desimal. Contoh: <span class="font-mono">3.75</span></p>
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
@@ -442,6 +480,56 @@
   </div>
 </div>
 
+{{-- Modal: Import Excel --}}
+<div id="modalImport" class="modal-backdrop hidden fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <h3 class="font-semibold text-slate-800">Import Data Alumni</h3>
+      <button onclick="closeModal('modalImport')" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form method="POST" action="{{ route('admin.alumni.import') }}" enctype="multipart/form-data">
+      @csrf
+      <div class="px-6 py-5 space-y-4">
+
+        <p class="text-sm text-slate-500">
+          Upload file Excel (.xlsx / .xls / .csv) sesuai format template. Data yang sudah ada (NIM sama) akan dilewati.
+        </p>
+
+        {{-- Drop zone --}}
+        <label for="importFile"
+               class="flex flex-col items-center gap-3 border-2 border-dashed border-slate-300 rounded-xl p-6 cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition group">
+          <svg class="w-8 h-8 text-slate-400 group-hover:text-brand-500 transition" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <div class="text-center">
+            <span id="importFileName" class="text-sm font-medium text-slate-600 group-hover:text-brand-600">Klik untuk pilih file</span>
+            <p class="text-xs text-slate-400 mt-0.5">.xlsx, .xls, atau .csv — maks. 5 MB</p>
+          </div>
+          <input id="importFile" type="file" name="file" accept=".xlsx,.xls,.csv"
+                 class="hidden" onchange="updateFileName(this)" />
+        </label>
+
+        <div class="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2.5">
+          <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Belum punya template?
+          <a href="{{ route('admin.alumni.template') }}" class="text-brand-600 font-medium hover:underline">Download di sini</a>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+        <button type="button" onclick="closeModal('modalImport')"
+                class="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition">Batal</button>
+        <button type="submit"
+                class="px-5 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition">
+          Import
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 @endpush
 
 @push('scripts')
@@ -471,6 +559,7 @@
     document.getElementById('editYear').value         = a.graduation_year;
     document.getElementById('editPlaceOfBirth').value = a.place_of_birth ?? '';
     document.getElementById('editDateOfBirth').value  = a.date_of_birth  ?? '';
+    document.getElementById('editIpk').value          = a.ipk !== null ? a.ipk : '';
     document.getElementById('editEmail').value        = a.email   ?? '';
     document.getElementById('editPhone').value        = a.phone   ?? '';
     document.getElementById('editAddress').value      = a.address ?? '';
@@ -480,6 +569,20 @@
 
   const flash = document.getElementById('flashMsg');
   if (flash) setTimeout(() => flash.remove(), 4000);
+
+  function updateFileName(input) {
+    const label = document.getElementById('importFileName');
+    label.textContent = input.files.length ? input.files[0].name : 'Klik untuk pilih file';
+  }
+
+  function confirmDelete(url, label) {
+    if (!confirm('Hapus alumni "' + label + '"? Tindakan ini tidak dapat dibatalkan.')) return;
+    const f = document.createElement('form');
+    f.method = 'POST'; f.action = url;
+    f.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">'
+                + '<input type="hidden" name="_method" value="DELETE">';
+    document.body.appendChild(f); f.submit();
+  }
 
   // Buka ulang modal tambah jika ada error validasi
   @if ($errors->any() && old('nim') !== null)

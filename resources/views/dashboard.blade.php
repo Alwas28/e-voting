@@ -174,10 +174,12 @@
     if (!el) return;
     function tick() {
       const diff = Math.max(0, endTime - Date.now());
-      const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-      el.textContent = h + ' : ' + m + ' : ' + s;
+      const ts = Math.floor(diff / 1000);
+      const d  = Math.floor(ts / 86400);
+      const h  = String(Math.floor((ts % 86400) / 3600)).padStart(2, '0');
+      const m  = String(Math.floor((ts % 3600) / 60)).padStart(2, '0');
+      const s  = String(ts % 60).padStart(2, '0');
+      el.textContent = d > 0 ? `${d} hari ${h}:${m}:${s}` : `${h}:${m}:${s}`;
       if (diff > 0) setTimeout(tick, 1000);
     }
     tick();

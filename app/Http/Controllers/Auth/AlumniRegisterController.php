@@ -13,7 +13,7 @@ use Illuminate\Validation\Rules\Password;
 
 class AlumniRegisterController extends Controller
 {
-    /** Langkah 1 — form verifikasi NIM & IPK */
+    /** Langkah 1 — form verifikasi NIM & Tahun Lulus */
     public function showStep1()
     {
         return view('auth.alumni.step1');
@@ -23,18 +23,18 @@ class AlumniRegisterController extends Controller
     public function verifyStep1(Request $request)
     {
         $request->validate([
-            'nim' => 'required|string',
-            'ipk' => 'required|numeric|min:0|max:4',
+            'nim'             => 'required|string',
+            'graduation_year' => 'required|integer|min:1990|max:' . (date('Y') + 1),
         ], [
-            'nim.required' => 'NIM wajib diisi.',
-            'ipk.required' => 'IPK wajib diisi.',
-            'ipk.numeric'  => 'IPK harus berupa angka.',
-            'ipk.min'      => 'IPK tidak boleh kurang dari 0.',
-            'ipk.max'      => 'IPK tidak boleh lebih dari 4.',
+            'nim.required'             => 'NIM wajib diisi.',
+            'graduation_year.required' => 'Tahun lulus wajib diisi.',
+            'graduation_year.integer'  => 'Tahun lulus harus berupa angka.',
+            'graduation_year.min'      => 'Tahun lulus tidak valid.',
+            'graduation_year.max'      => 'Tahun lulus tidak valid.',
         ]);
 
         $alumni = Alumni::where('nim', $request->nim)
-                        ->where('ipk', $request->ipk)
+                        ->where('graduation_year', $request->graduation_year)
                         ->where('is_active', true)
                         ->first();
 

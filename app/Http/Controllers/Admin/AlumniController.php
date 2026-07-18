@@ -30,6 +30,10 @@ class AlumniController extends Controller
             $query->where('faculty', $request->faculty);
         }
 
+        if ($request->filled('department')) {
+            $query->where('department', $request->department);
+        }
+
         if ($request->filled('year')) {
             $query->where('graduation_year', $request->year);
         }
@@ -38,9 +42,10 @@ class AlumniController extends Controller
             $query->where('is_active', $request->status === 'active');
         }
 
-        $alumni    = $query->orderBy('name')->paginate(15)->withQueryString();
-        $faculties = Alumni::distinct()->orderBy('faculty')->pluck('faculty');
-        $years     = Alumni::distinct()->orderByDesc('graduation_year')->pluck('graduation_year');
+        $alumni      = $query->orderBy('name')->paginate(15)->withQueryString();
+        $faculties   = Alumni::distinct()->orderBy('faculty')->pluck('faculty');
+        $departments = Alumni::distinct()->orderBy('department')->pluck('department');
+        $years       = Alumni::distinct()->orderByDesc('graduation_year')->pluck('graduation_year');
 
         $stats = [
             'total'    => Alumni::count(),
@@ -49,7 +54,7 @@ class AlumniController extends Controller
             'faculties' => Alumni::distinct('faculty')->count('faculty'),
         ];
 
-        return view('admin.alumni.index', compact('alumni', 'faculties', 'years', 'stats'));
+        return view('admin.alumni.index', compact('alumni', 'faculties', 'departments', 'years', 'stats'));
     }
 
     public function store(Request $request)

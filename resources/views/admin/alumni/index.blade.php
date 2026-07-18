@@ -93,6 +93,14 @@
           @endforeach
         </select>
 
+        <select name="department"
+                class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <option value="">Semua Program Studi</option>
+          @foreach ($departments as $d)
+            <option value="{{ $d }}" {{ request('department') === $d ? 'selected' : '' }}>{{ $d }}</option>
+          @endforeach
+        </select>
+
         <select name="year"
                 class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500">
           <option value="">Semua Tahun</option>
@@ -113,7 +121,7 @@
           Filter
         </button>
 
-        @if (request()->hasAny(['search','faculty','year','status']))
+        @if (request()->hasAny(['search','faculty','department','year','status']))
           <a href="{{ route('admin.alumni.index') }}"
              class="px-4 py-2 border border-slate-300 text-slate-600 text-sm rounded-lg hover:bg-slate-50 transition">
             Reset
@@ -210,7 +218,7 @@
                 <div class="flex flex-col items-center gap-2 text-slate-400">
                   <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-3.5 2m3.5-2l3.5 2"/></svg>
                   <p class="text-sm">Belum ada data alumni.</p>
-                  @if (request()->hasAny(['search','faculty','year','status']))
+                  @if (request()->hasAny(['search','faculty','department','year','status']))
                     <a href="{{ route('admin.alumni.index') }}" class="text-brand-600 text-xs hover:underline">Hapus filter</a>
                   @endif
                 </div>
